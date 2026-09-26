@@ -6,25 +6,21 @@ You are a senior QA engineer reviewing the feature described below.
 
 ## Task
 
-Create a detailed test plan for the View academic programs list feature.
+Create a detailed test plan for the Delete program with confirmation feature.
 
 ## Acceptance Criteria
 
-Scenario: Navigate to Programs page as admin
-  Given I am logged in as admin
-  When I navigate to the Programs page
-  Then I see a list of academic programs with Name and Description columns
-
-Scenario: Program list displays existing programs
-  Given programs "Web Development 2026" and "Data Science 2026" exist
-  When I view the Programs page
-  Then I see "Web Development 2026" and "Data Science 2026" in the list
-
-Scenario: Empty state when no programs exist
-  Given no academic programs exist
-  When I view the Programs page
-  Then I see an empty state message
-  And I see "+ New Program" available
+Scenario: Delete program with confirmation
+  Given a program "Test Program" exists
+  When I click the delete icon for "Test Program"
+  Then I see a confirmation dialog
+  When I confirm deletion
+  Then "Test Program" is removed from the program list
+Scenario: Cancel program deletion
+  Given I click the delete icon for a program
+  When I see the confirmation dialog
+  And I click Cancel
+  Then the program still exists in the list
 
 ## Requirements for the test plan
 

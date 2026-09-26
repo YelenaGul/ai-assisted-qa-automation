@@ -6,28 +6,19 @@ You are a senior QA engineer reviewing the feature described below.
 
 ## Task
 
-Create a detailed test plan for the Cancel program form without saving feature.
+Create a detailed test plan for the Program list filtering and display feature.
 
 ## Acceptance Criteria
 
-Scenario: Cancel create program discards input
-  Given I am on the program creation form
-  And I entered Program Name "Draft Program"
-  When I click Cancel
-  Then the modal closes
-  And "Draft Program" does not appear in the program list
-
-Scenario: Cancel edit discards changes
-  Given I am editing "Web Development 2026"
-  When I change the Name to "Should Not Save"
-  And I click Cancel
-  Then the modal closes
-  And the program list still shows "Web Development 2026"
-
-Scenario: Close modal with X discards unsaved changes
-  Given I am on the program creation form with unsaved input
-  When I click the close (X) control
-  Then the modal closes without creating a program
+Scenario: Display program list with key details
+  Given programs exist in the system
+  When I navigate to the Programs page
+  Then I see a list showing each program's name and description
+Scenario: Empty state when no programs exist
+  Given no programs exist
+  When I navigate to the Programs page
+  Then I see a message indicating no programs have been created
+  And I see a prompt to create the first program
 
 ## Requirements for the test plan
 
