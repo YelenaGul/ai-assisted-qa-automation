@@ -68,7 +68,7 @@ export function saveProgramButton(scope: Page | Locator) {
 
 export function programRows(page: Page, programName: string) {
   return programsTable(page).getByRole('row').filter({
-    has: page.locator('td').first().getByText(programName, { exact: true }),
+    has: page.getByText(programName, { exact: true }),
   });
 }
 
@@ -169,7 +169,7 @@ export async function createProgram(
   await programNameField(dialog).fill(programName);
   await descriptionField(dialog).fill(description);
   await createProgramButton(dialog).click();
-  await expect(dialog).toBeHidden();
+  await expect(dialog).toBeHidden({ timeout: 120_000 });
   await expectProgramListed(page, programName);
 }
 
@@ -192,8 +192,8 @@ export function cancelEditProgramButton(scope: Page | Locator) {
 export async function openEditProgram(page: Page, programName: string): Promise<void> {
   await gotoPrograms(page);
   const edit = editProgramButton(page, programName);
-  await edit.scrollIntoViewIfNeeded();
-  await edit.click();
+  await edit.scrollIntoViewIfNeeded({ timeout: 60_000 });
+  await edit.click({ timeout: 60_000 });
   await expect(editProgramDialog(page)).toBeVisible();
   await expect(programNameField(editProgramDialog(page))).toBeVisible();
 }

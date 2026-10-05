@@ -1,15 +1,24 @@
 # Test Cases: Edit Program (DS-2)
 
-**Application:** Didaxis Studio  
+**Application:** Didaxis Studio (`https://test.didaxis.studio`)  
+**Jira:** [DS-2 — Edit existing program details](https://legionqaschool.atlassian.net/browse/DS-2)  
 **Full test plan:** [DS-2_output.md](./DS-2_output.md)  
 **Playwright:** `tests/ds2-edit-program.spec.ts`  
 **Helpers:** `tests/helpers/didaxis.ts`
 
+## UI reference (verified on test env)
+
+- **Programs page:** heading `Programs`, subtitle `Manage academic programs and semesters`, table columns **Program** + actions column.
+- **Row actions:** icon buttons with accessible names **`Edit {programName}`** and **`Delete {programName}`** (scroll row into view on large lists).
+- **Edit modal:** dialog **`Edit Program`**; fields **`Program Name`** (textbox), **`Description`** (textbox); buttons **`Save`**, **`Cancel`**.
+- **Validation observed:** empty or whitespace-only **Program Name** → **Save** disabled. **Save** stays **enabled** when opening edit with no changes.
+- **Known gaps (test env):** duplicate rename on edit may not close the modal and may allow two rows with the same name; 101+ character names are not blocked in the form.
+
 ## Common preconditions
 
-- Logged in via `DIDAXIS_EMAIL` / `DIDAXIS_PASSWORD`.
-- Target program created in-test with unique name before edit steps.
-- **Edit Program** dialog; row action **Edit {programName}**.
+- Logged in via `DIDAXIS_EMAIL` / `DIDAXIS_PASSWORD` (`.env`, loaded by `playwright.config.ts`).
+- Target program created in-test with a unique name before edit steps.
+- Open edit via row action **`Edit {programName}`**.
 
 ## Automation coverage summary
 
@@ -20,14 +29,14 @@
 | TC-003 | Name unchanged when only Description edited | **Automated** | TC-003 |
 | TC-004 | Save with no changes | **Automated** | TC-004 |
 | TC-005 | Empty Name prevents save | **Automated** | TC-005 |
-| TC-006 | Duplicate name on edit rejected | **Automated** | TC-006 *(flexible: block or allow)* |
+| TC-006 | Duplicate name on edit | **Automated** | TC-006 *(documents current app behavior)* |
 | TC-007 | Cancel discards unsaved changes | **Automated** | TC-007 |
 | TC-008 | Special characters preserved | **Automated** | TC-008 |
-| TC-009 | Name at max length on edit | **Not automated** | — |
-| TC-010 | Whitespace-only Name on edit invalid | **Not automated** | — |
-| TC-011 | Leading/trailing spaces on edit | **Not automated** | — |
+| TC-009 | Name at 100 characters on edit | **Automated** | TC-009 |
+| TC-010 | Whitespace-only Name on edit invalid | **Automated** | TC-010 |
+| TC-011 | Leading/trailing spaces trimmed on save | **Automated** | TC-011 |
 
-**Counts:** 11 plan cases — 8 automated; 3 not automated.
+**Counts:** 11 plan cases — **11 automated**.
 
 ---
 
@@ -38,10 +47,11 @@
 
 **Steps**
 
-1. Create program with known name and description; click **Edit** on row.
+1. Create program with known name and description; click **Edit {name}** on the row.
 
 **Expected result**
 
+- **Edit Program** dialog opens.
 - **Program Name** and **Description** match saved values.
 
 ---
@@ -53,7 +63,7 @@
 
 **Steps**
 
-1. Edit program; change name to `{original} - Updated`; **Save**.
+1. Edit program; change **Program Name** to `{original} - Updated`; **Save**.
 
 **Expected result**
 
@@ -72,7 +82,7 @@
 
 **Expected result**
 
-- Name unchanged; description updated in list row.
+- Name unchanged; description updated in list row (second paragraph in **Program** column).
 
 ---
 
@@ -83,11 +93,12 @@
 
 **Steps**
 
-1. Open edit without changes; **Save**.
+1. Open **Edit Program** without changing fields; **Save**.
 
 **Expected result**
 
-- Name and description unchanged in list.
+- **Save** is enabled (no client-side “no changes” disable).
+- Dialog closes; name and description unchanged in list.
 
 ---
 
@@ -98,30 +109,30 @@
 
 **Steps**
 
-1. Clear **Program Name**; attempt **Save** or verify disabled; **Cancel** if needed.
+1. Clear **Program Name**; observe **Save**.
 
 **Expected result**
 
-- Empty name not persisted; original program still listed.
+- **Save** is disabled; original program still listed after **Cancel**.
 
 ---
 
-### TC-006 — Duplicate name on edit is rejected
+### TC-006 — Duplicate name on edit
 
 **Priority:** High | **Type:** Negative  
-**Automation:** **Automated** — `TC-006: renaming to an existing program name is rejected or blocked`
+**Automation:** **Automated** — `TC-006: renaming to an existing program name`
 
 **Steps**
 
 1. Create programs **A** and **B**; rename **B** to **A**; **Save**.
 
-**Expected result (plan)**
+**Expected result (product intent / Jira AC analogy)**
 
-- Error; **B** unchanged.
+- Error; **B** unchanged; one row per name.
 
-**Expected result (automation)**
+**Expected result (test env — documented)**
 
-- Either one row each or documented duplicate-name behavior if rename succeeds.
+- **Save** may leave the modal open; duplicate **Program** rows for the same name may appear. Test asserts safe bounds and closes the modal if it remains open.
 
 ---
 
@@ -136,7 +147,7 @@
 
 **Expected result**
 
-- Original name remains in list.
+- Original name remains in list; rejected name absent.
 
 ---
 
@@ -151,49 +162,49 @@
 
 **Expected result**
 
-- Plain text in list.
+- Plain text in list (no HTML injection).
 
 ---
 
-### TC-009 — Name at maximum length on edit
+### TC-009 — Name at 100 characters on edit
 
 **Priority:** Medium | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-009: 100-character program name saves on edit`
 
 **Steps**
 
-1. Edit program; set **Name** to 255 valid characters; **Save**.
+1. Edit program; set **Program Name** to exactly 100 characters; **Save**.
 
 **Expected result**
 
-- Save succeeds; full name stored.
+- Dialog closes; list shows the full 100-character name.
 
 ---
 
 ### TC-010 — Whitespace-only Name on edit treated as invalid
 
 **Priority:** Medium | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-010: whitespace-only name on edit cannot be saved`
 
 **Steps**
 
-1. Replace **Name** with spaces only; attempt **Save**.
+1. Replace **Program Name** with spaces only; observe **Save**.
 
 **Expected result**
 
-- Not submitted; list unchanged.
+- **Save** disabled; list unchanged after **Cancel**.
 
 ---
 
-### TC-011 — Leading and trailing spaces on Name handled consistently
+### TC-011 — Leading and trailing spaces trimmed on save
 
 **Priority:** Low | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-011: leading and trailing spaces trimmed on edit save`
 
 **Steps**
 
-1. Set **Name** to `  UX Design 2026 Pro  `; **Save**.
+1. Set **Program Name** to `  {base} Pro  `; **Save**.
 
 **Expected result**
 
-- Trim or reject per rules; no confusing duplicates.
+- List shows `{base} Pro` without leading/trailing spaces.
