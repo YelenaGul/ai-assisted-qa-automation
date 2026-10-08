@@ -1,5 +1,5 @@
 ---
-name: jira-bug-reporterORIGIN
+name: jira-bug-reporter
 description: Analyzes Playwright test failures, identifies root cause, and creates detailed Jira bug tickets. Use when a test fails and needs investigation and bug reporting.
 ---
 
