@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/cleanup.fixture';
 import {
   login,
   uniqueProgramName,
   gotoPrograms,
   openNewProgramModal,
+  createProgram,
   createProgramDialog,
   newProgramButton,
   programNameField,
@@ -32,18 +33,15 @@ test('TC-001: program creation form shows Program Name and Description', async (
 
 test('TC-002: created program appears in the list and modal closes', async ({
   page,
+  trackProgram,
 }) => {
   const programName = uniqueProgramName('Web Development 2026');
-  const description = 'Full-stack web development program';
-
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill(description);
-  await createProgramButton(dialog).click();
-
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, programName);
+  await createProgram(
+    page,
+    programName,
+    'Full-stack web development program',
+    trackProgram,
+  );
 });
 
 test('TC-003: Create is disabled when Program Name is empty', async ({ page }) => {
@@ -55,68 +53,37 @@ test('TC-003: Create is disabled when Program Name is empty', async ({ page }) =
   await expect(createProgramButton(dialog)).toBeDisabled();
 });
 
-test('TC-004: program can be created with empty Description', async ({ page }) => {
+test('TC-004: program can be created with empty Description', async ({
+  page,
+  trackProgram,
+}) => {
   const programName = uniqueProgramName('Program No Description');
-
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill('');
-  await createProgramButton(dialog).click();
-
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, programName);
+  await createProgram(page, programName, '', trackProgram);
 });
 
 test('TC-005: program name with special characters is accepted and visible', async ({
   page,
+  trackProgram,
 }) => {
   const programName = uniqueProgramName('Pay & Learn (50%) — QA');
-  const description = 'Special characters in title';
-
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill(description);
-  await createProgramButton(dialog).click();
-
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, programName);
+  await createProgram(page, programName, 'Special characters in title', trackProgram);
 });
 
-test('TC-006: long program name is accepted and visible', async ({ page }) => {
+test('TC-006: long program name is accepted and visible', async ({
+  page,
+  trackProgram,
+}) => {
   const programName = uniqueProgramName(`Long-${'a'.repeat(100)}`);
-
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill('Boundary length check');
-  await createProgramButton(dialog).click();
-
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, programName);
+  await createProgram(page, programName, 'Boundary length check', trackProgram);
 });
 
 test('TC-007: duplicate program titles can exist as separate list entries', async ({
   page,
+  trackProgram,
 }) => {
   const programName = uniqueProgramName('Duplicate Title Test');
-  const description = 'First instance';
-
-  await openNewProgramModal(page);
-  let dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill(description);
-  await createProgramButton(dialog).click();
-  await expectProgramListed(page, programName);
-
-  await newProgramButton(page).click();
-  dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(programName);
-  await descriptionField(dialog).fill('Second instance');
-  await createProgramButton(dialog).click();
-
-  await expect(dialog).toBeHidden();
+  await createProgram(page, programName, 'First instance', trackProgram);
+  await createProgram(page, programName, 'Second instance', trackProgram, 2);
   await expectProgramListed(page, programName, 2);
 });
 

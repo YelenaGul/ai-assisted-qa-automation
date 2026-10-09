@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/cleanup.fixture';
 import {
   login,
   uniqueProgramName,
@@ -18,11 +18,14 @@ test.beforeEach(async ({ page }) => {
   await login(page);
 });
 
-test('TC-001: list shows each program name and description', async ({ page }) => {
+test('TC-001: list shows each program name and description', async ({
+  page,
+  trackProgram,
+}) => {
   const firstName = uniqueProgramName('Web Development 2026');
   const secondName = uniqueProgramName('Data Science 2026');
-  await createProgram(page, firstName, 'Full-stack web development program');
-  await createProgram(page, secondName, 'Intro to data science');
+  await createProgram(page, firstName, 'Full-stack web development program', trackProgram);
+  await createProgram(page, secondName, 'Intro to data science', trackProgram);
 
   await gotoPrograms(page);
   await expect(programsTable(page)).toBeVisible();
@@ -30,18 +33,18 @@ test('TC-001: list shows each program name and description', async ({ page }) =>
   await expectProgramRowDetails(page, secondName, 'Intro to data science');
 });
 
-test('TC-003: single program entry shows full details', async ({ page }) => {
+test('TC-003: single program entry shows full details', async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Solo Program 2026');
   const description = 'Only program in catalog';
-  await createProgram(page, programName, description);
+  await createProgram(page, programName, description, trackProgram);
 
   await gotoPrograms(page);
   await expectProgramRowDetails(page, programName, description);
 });
 
-test('TC-004: deleted programs are not listed', async ({ page }) => {
+test('TC-004: deleted programs are not listed', async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Deleted Ghost Program');
-  await createProgram(page, programName, 'Will be deleted');
+  await createProgram(page, programName, 'Will be deleted', trackProgram);
 
   await deleteProgramConfirmed(page, programName);
   await gotoPrograms(page);
@@ -50,10 +53,11 @@ test('TC-004: deleted programs are not listed', async ({ page }) => {
 
 test('TC-006: long description displays in list without breaking layout', async ({
   page,
+  trackProgram,
 }) => {
   const programName = uniqueProgramName('Long Description Program 2026');
   const description = 'L'.repeat(500);
-  await createProgram(page, programName, description);
+  await createProgram(page, programName, description, trackProgram);
 
   await gotoPrograms(page);
   const row = programRow(page, programName);
@@ -62,10 +66,13 @@ test('TC-006: long description displays in list without breaking layout', async 
   await expect(programRowDescription(row)).toContainText(description.slice(0, 80));
 });
 
-test('TC-007: special characters render as plain text in list', async ({ page }) => {
+test('TC-007: special characters render as plain text in list', async ({
+  page,
+  trackProgram,
+}) => {
   const programName = uniqueProgramName('QA & Testing — "Phase 1"');
   const description = "Symbols: <tag> & 'quote'";
-  await createProgram(page, programName, description);
+  await createProgram(page, programName, description, trackProgram);
 
   await gotoPrograms(page);
   await expectProgramRowDetails(page, programName, description);

@@ -1,17 +1,24 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import {
+  isProgramCreatePost,
+  programIdFromCreateResponse,
+  waitForProgramCreateResponse,
+} from './didaxis-api';
 
-export function requireEnv(
-  name: 'DIDAXIS_URL' | 'DIDAXIS_EMAIL' | 'DIDAXIS_PASSWORD',
-): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} must be set in .env (see .env-example).`);
-  }
-  return value;
-}
+import { didaxisBaseUrl, requireEnv } from './didaxis-env';
 
-export function didaxisBaseUrl(): string {
-  return requireEnv('DIDAXIS_URL').replace(/\/$/, '');
+export { didaxisBaseUrl, requireEnv };
+
+export type TrackProgram = (programId: string) => void;
+
+export async function submitCreateProgramDialogWithTracking(
+  page: Page,
+  dialog: Locator,
+  trackProgram: TrackProgram,
+): Promise<void> {
+  const createResponse = waitForProgramCreateResponse(page);
+  await createProgramButton(dialog).click();
+  trackProgram(await programIdFromCreateResponse(await createResponse));
 }
 
 export function programsUrl(): string {
@@ -145,10 +152,20 @@ export async function attemptCreateProgram(
   page: Page,
   programName: string,
   description: string,
+  trackProgram?: TrackProgram,
 ): Promise<Locator> {
   const dialog = await openCreateProgramDialog(page);
   await fillCreateProgramFormOnDialog(dialog, programName, description);
+  const createResponsePromise = page
+    .waitForResponse(isProgramCreatePost, { timeout: 120_000 })
+    .catch(() => null);
   await submitCreateProgramDialog(dialog);
+  if (trackProgram) {
+    const createResponse = await createResponsePromise;
+    if (createResponse) {
+      trackProgram(await programIdFromCreateResponse(createResponse));
+    }
+  }
   return dialog;
 }
 
@@ -163,14 +180,16 @@ export async function createProgram(
   page: Page,
   programName: string,
   description: string,
+  trackProgram: TrackProgram,
+  listedCount = 1,
 ): Promise<void> {
   await openNewProgramModal(page);
   const dialog = createProgramDialog(page);
   await programNameField(dialog).fill(programName);
   await descriptionField(dialog).fill(description);
-  await createProgramButton(dialog).click();
+  await submitCreateProgramDialogWithTracking(page, dialog, trackProgram);
   await expect(dialog).toBeHidden({ timeout: 120_000 });
-  await expectProgramListed(page, programName);
+  await expectProgramListed(page, programName, listedCount);
 }
 
 export function editProgramButton(page: Page, programName: string) {
