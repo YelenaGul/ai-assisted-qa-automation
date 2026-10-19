@@ -1,6 +1,5 @@
-import { test, expect } from '../fixtures/cleanup.fixture';
+import { test, expect } from '../fixtures/didaxis.fixture';
 import {
-  login,
   uniqueProgramName,
   gotoPrograms,
   openNewProgramModal,
@@ -13,10 +12,6 @@ import {
   expectProgramListed,
   programsMain,
 } from './helpers/didaxis';
-
-test.beforeEach(async ({ page }) => {
-  await login(page);
-});
 
 test('TC-001: program creation form shows Program Name and Description', async ({
   page,

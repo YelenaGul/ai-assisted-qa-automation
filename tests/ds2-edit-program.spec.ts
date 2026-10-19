@@ -1,6 +1,5 @@
-import { test, expect } from '../fixtures/cleanup.fixture';
+import { test, expect } from '../fixtures/didaxis.fixture';
 import {
-  login,
   uniqueProgramName,
   createProgram,
   openEditProgramDialog,
@@ -19,10 +18,6 @@ import {
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120_000);
-
-test.beforeEach(async ({ page, trackProgram }) => {
-  await login(page);
-});
 
 test('TC-001: edit form is pre-populated with current program data', async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Web Development 2026');

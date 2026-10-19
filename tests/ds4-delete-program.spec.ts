@@ -1,6 +1,5 @@
-import { test } from '../fixtures/cleanup.fixture';
+import { test } from '../fixtures/didaxis.fixture';
 import {
-  login,
   uniqueProgramName,
   createProgram,
   gotoPrograms,
@@ -12,10 +11,6 @@ import {
   acceptDeleteConfirmationTwice,
   previewDeleteConfirmationMessage,
 } from './helpers/didaxis';
-
-test.beforeEach(async ({ page }) => {
-  await login(page);
-});
 
 test('TC-001: confirmed delete removes program from list', async ({
   page,

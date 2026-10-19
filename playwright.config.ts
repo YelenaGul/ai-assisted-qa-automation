@@ -6,7 +6,21 @@ import { defineConfig, devices } from '@playwright/test';
  */
 import dotenv from 'dotenv';
 import path from 'path';
+import {
+  authStoragePath,
+  listConfiguredDidaxisUsers,
+} from './tests/helpers/didaxis-users';
+
 dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const configuredDidaxisUsers = listConfiguredDidaxisUsers();
+if (configuredDidaxisUsers.length === 0) {
+  throw new Error(
+    'No Didaxis users configured. Set DIDAXIS_USER_1_* or DIDAXIS_EMAIL / DIDAXIS_PASSWORD in .env.',
+  );
+}
+
+const didaxisTestMatch = /ds\d-.*\.spec\.ts/;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -38,8 +52,22 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
+    ...configuredDidaxisUsers.map((userId) => ({
+      name: `chromium-${userId}`,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStoragePath(userId),
+      },
+      dependencies: ['setup'] as const,
+      testMatch: didaxisTestMatch,
+    })),
+    {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: [/.*\.setup\.ts/, didaxisTestMatch],
     },
 
   //  {

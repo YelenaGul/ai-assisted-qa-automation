@@ -1,5 +1,6 @@
-import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
+import type { APIRequestContext, Page, Response } from '@playwright/test';
 import { didaxisBaseUrl, requireEnv } from './didaxis-env';
+import type { DidaxisCredentials } from './didaxis-users';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,7 +12,7 @@ export function assertProgramUuid(id: string): string {
   return id;
 }
 
-export function isProgramCreatePost(response: APIResponse): boolean {
+export function isProgramCreatePost(response: Response): boolean {
   if (response.request().method() !== 'POST' || !response.ok()) {
     return false;
   }
@@ -28,7 +29,7 @@ export function waitForProgramCreateResponse(page: Page) {
 }
 
 export async function programIdFromCreateResponse(
-  response: APIResponse,
+  response: Response,
 ): Promise<string> {
   const body = (await response.json()) as { data?: { id?: string } };
   const id = body.data?.id;
@@ -44,9 +45,12 @@ export async function fetchDidaxisAccessToken(
   return loginAccessToken(request);
 }
 
-async function loginAccessToken(request: APIRequestContext): Promise<string> {
-  const email = requireEnv('DIDAXIS_EMAIL');
-  const password = requireEnv('DIDAXIS_PASSWORD');
+async function loginAccessToken(
+  request: APIRequestContext,
+  credentials?: DidaxisCredentials,
+): Promise<string> {
+  const email = credentials?.email ?? requireEnv('DIDAXIS_EMAIL');
+  const password = credentials?.password ?? requireEnv('DIDAXIS_PASSWORD');
   const response = await request.post(`${didaxisBaseUrl()}/api/auth/login`, {
     data: { email, password },
   });
@@ -65,12 +69,15 @@ async function loginAccessToken(request: APIRequestContext): Promise<string> {
 
 async function resolveAccessToken(
   request: APIRequestContext,
+  credentials?: DidaxisCredentials,
 ): Promise<string> {
-  const fromEnv = process.env.DIDAXIS_API_TOKEN?.trim();
-  if (fromEnv) {
-    return fromEnv;
+  if (!credentials) {
+    const fromEnv = process.env.DIDAXIS_API_TOKEN?.trim();
+    if (fromEnv) {
+      return fromEnv;
+    }
   }
-  return loginAccessToken(request);
+  return loginAccessToken(request, credentials);
 }
 
 export async function listProgramIds(
@@ -109,6 +116,7 @@ export async function listProgramIds(
 export async function deleteProgramById(
   request: APIRequestContext,
   programId: string,
+  credentials?: DidaxisCredentials,
 ): Promise<void> {
   const id = assertProgramUuid(programId);
   const url = `${didaxisBaseUrl()}/api/programs/${id}`;
@@ -118,11 +126,11 @@ export async function deleteProgramById(
       headers: { Authorization: `Bearer ${token}` },
     });
 
-  let token = await resolveAccessToken(request);
+  let token = await resolveAccessToken(request, credentials);
   let response = await attemptDelete(token);
 
   if (response.status() === 401) {
-    token = await loginAccessToken(request);
+    token = await loginAccessToken(request, credentials);
     response = await attemptDelete(token);
   }
 

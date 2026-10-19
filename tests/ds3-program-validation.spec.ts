@@ -1,6 +1,5 @@
-import { test, expect } from '../fixtures/cleanup.fixture';
+import { test, expect } from '../fixtures/didaxis.fixture';
 import {
-  login,
   uniqueProgramName,
   createProgram,
   openCreateProgramDialog,
@@ -15,10 +14,6 @@ import {
   expectExactlyOneProgramNamed,
   programRows,
 } from './helpers/didaxis';
-
-test.beforeEach(async ({ page }) => {
-  await login(page);
-});
 
 test('TC-001: program name with special characters is created', async ({
   page,

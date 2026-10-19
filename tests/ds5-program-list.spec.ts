@@ -1,6 +1,5 @@
-import { test, expect } from '../fixtures/cleanup.fixture';
+import { test, expect } from '../fixtures/didaxis.fixture';
 import {
-  login,
   uniqueProgramName,
   createProgram,
   gotoPrograms,
@@ -13,10 +12,6 @@ import {
   programsTable,
   expectProgramsPageLayout,
 } from './helpers/didaxis';
-
-test.beforeEach(async ({ page }) => {
-  await login(page);
-});
 
 test('TC-001: list shows each program name and description', async ({
   page,
