@@ -20,7 +20,7 @@ if (configuredDidaxisUsers.length === 0) {
   );
 }
 
-const didaxisTestMatch = /ds\d-.*\.spec\.ts/;
+const didaxisTestMatch = /(?:ds\d-.*|programs)\.spec\.ts/;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
