@@ -16,4 +16,27 @@ export class NewProgramModal {
       /already exists|duplicate|name.*taken/i,
     );
   }
+
+  /**
+   * CSS selector for AxeBuilder.include(). Axe accepts selectors, not Playwright locators.
+   * Derived from this dialog's role and accessible name (aria-labelledby or aria-label).
+   */
+  async axeIncludeSelector(): Promise<string> {
+    return this.dialog.evaluate((element) => {
+      const explicitRole = element.getAttribute('role');
+      const root = explicitRole ? `[role="${explicitRole}"]` : element.tagName.toLowerCase();
+      const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const labelledBy = element.getAttribute('aria-labelledby');
+      if (labelledBy) {
+        return `${root}[aria-labelledby="${escapeAttr(labelledBy)}"]`;
+      }
+      const label = element.getAttribute('aria-label');
+      if (label) {
+        return `${root}[aria-label="${escapeAttr(label)}"]`;
+      }
+      throw new Error(
+        'New Program dialog is missing aria-labelledby or aria-label, so the axe scan cannot be scoped to it.',
+      );
+    });
+  }
 }

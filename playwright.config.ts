@@ -20,7 +20,8 @@ if (configuredDidaxisUsers.length === 0) {
   );
 }
 
-const didaxisTestMatch = /(?:ds\d-.*|programs)\.spec\.ts/;
+// Authenticated Didaxis specs, including programs.a11y.spec.ts.
+const didaxisTestMatch = /(?:ds\d-.*|programs(?:\.[^.]+)?)\.spec\.ts/;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
