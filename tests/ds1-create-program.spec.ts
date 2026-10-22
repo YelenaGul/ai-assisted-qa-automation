@@ -12,6 +12,12 @@ import {
   expectProgramListed,
   programsMain,
 } from './helpers/didaxis';
+import {
+  expectDuplicateCreateRejected,
+  programNameWithLength,
+  PROGRAM_NAME_MAX_LENGTH,
+} from './helpers/program-validation';
+import { ProgramsPage } from '../pages/ProgramsPage';
 
 test('TC-001: program creation form shows Program Name and Description', async ({
   page,
@@ -68,18 +74,20 @@ test('TC-006: long program name is accepted and visible', async ({
   page,
   trackProgram,
 }) => {
-  const programName = uniqueProgramName(`Long-${'a'.repeat(100)}`);
+  const programName = programNameWithLength(PROGRAM_NAME_MAX_LENGTH, 'Long');
   await createProgram(page, programName, 'Boundary length check', trackProgram);
 });
 
-test('TC-007: duplicate program titles can exist as separate list entries', async ({
+test('TC-007: duplicate program name on create is rejected', async ({
   page,
   trackProgram,
 }) => {
   const programName = uniqueProgramName('Duplicate Title Test');
-  await createProgram(page, programName, 'First instance', trackProgram);
-  await createProgram(page, programName, 'Second instance', trackProgram, 2);
-  await expectProgramListed(page, programName, 2);
+  const programs = new ProgramsPage(page);
+
+  trackProgram(await programs.createProgram(programName, 'First instance'));
+  await expectProgramListed(page, programName, 1);
+  await expectDuplicateCreateRejected(programs, programName);
 });
 
 test('TC-008: whitespace-only Program Name does not create a program', async ({

@@ -13,7 +13,7 @@ export class NewProgramModal {
     this.description = this.dialog.getByRole('textbox', { name: 'Description' });
     this.createButton = this.dialog.getByRole('button', { name: 'Create' });
     this.nameValidationError = this.dialog.getByText(
-      /already exists|duplicate|name.*taken/i,
+      /already exists|duplicate|name.*taken|too long|maximum|exceeds|100 character/i,
     );
   }
 

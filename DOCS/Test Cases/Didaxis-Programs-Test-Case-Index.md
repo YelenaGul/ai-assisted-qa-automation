@@ -35,4 +35,4 @@ Credentials and base URL: `.env` / `.env-example` (`DIDAXIS_URL`, `DIDAXIS_EMAIL
 - DS-1 max-length plan TC-008/009/013 vs DS-3 TC-009/010 *(255/256 create validation automated in DS-3)*
 - List filter/search and large-catalog pagination (DS-5 TC-008/009/010 plan)
 - API failure simulation (DS-4 TC-010)
-- DS-1 TC-006 duplicate-on-create: plan expects rejection; `ds1`/`programs` TC-007 still assert *allowed* duplicates — use **DS-3 TC-004–TC-006** for current duplicate-on-create behavior
+- Name/description max length per [Program Setup — Validation Rules](https://legionqaschool.atlassian.net/wiki/spaces/DS/pages/233111553/Program+Setup+Validation+Rules): **100** / **500** chars (`tests/helpers/program-validation.ts`)

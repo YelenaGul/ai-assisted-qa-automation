@@ -22,12 +22,14 @@
 | TC-006 | Duplicate not created when error | **Automated** | TC-006 |
 | TC-007 | Case-insensitive duplicate (if rule) | **Automated** | TC-007 |
 | TC-008 | Leading/trailing spaces duplicate | **Automated** | TC-008 |
-| TC-009 | Name at max length valid | **Automated** | TC-009 *(255 chars)* |
-| TC-010 | Name over max rejected | **Automated** | TC-010 *(256 chars)* |
+| TC-009 | Name at max length valid | **Automated** | TC-009 *(100 chars)* |
+| TC-010 | Name over max rejected | **Automated** | TC-010 *(101 chars)* |
 | TC-011 | Duplicate prevention on edit rename | **Cross-suite** | [DS-2 TC-006](../DS-2/DS-2_automated-test-cases.md) — not in this spec |
 | TC-012 | Unicode / accented name | **Automated** | TC-012 |
 
-**Counts:** 12 plan cases — **11 automated** in this spec; **TC-011** covered on edit in DS-2.
+**Supplementary (Confluence validation rules):** `description over 500 characters is rejected on create` in `ds3-program-validation.spec.ts`.
+
+**Counts:** 12 plan cases — **11 automated** in this spec; **TC-011** (edit duplicate) covered on edit in DS-2; +1 supplementary description max-length test.
 
 ---
 
@@ -158,7 +160,7 @@
 
 **Steps**
 
-1. Create with unique 255-character name.
+1. Create with unique **100**-character name.
 
 **Expected result**
 
@@ -173,7 +175,7 @@
 
 **Steps**
 
-1. Enter 256-character name; attempt **Create**.
+1. Enter **101**-character name; attempt **Create**.
 
 **Expected result**
 

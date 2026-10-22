@@ -145,7 +145,9 @@ export async function submitCreateProgramDialog(dialog: Locator): Promise<void> 
 
 /** Validation message for duplicate program names (scoped to create dialog). */
 export function createProgramNameError(dialog: Locator) {
-  return dialog.getByText(/already exists|duplicate|name.*taken/i);
+  return dialog.getByText(
+    /already exists|duplicate|name.*taken|too long|maximum|exceeds|100 character/i,
+  );
 }
 
 export async function attemptCreateProgram(

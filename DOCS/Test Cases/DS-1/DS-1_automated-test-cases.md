@@ -20,9 +20,9 @@
 | TC-003 | Create with empty Description | **Automated** | TC-004 *(spec ID)* |
 | TC-004 | Create disabled when name empty | **Automated** | TC-003 *(spec ID)* |
 | TC-005 | Modal/list unchanged when Create disabled | **Not automated** | — |
-| TC-006 | Duplicate name rejected | **Partial** | See **DS-3 TC-004–TC-006**; spec **TC-007** still asserts *allowed* duplicates *(may fail if tenant enforces DS-3)* |
+| TC-006 | Duplicate name rejected | **Automated** | TC-007 *(duplicate rejected; aligns with validation rules)* |
 | TC-007 | Non-admin cannot create | **Not automated** | — |
-| TC-008 | Name at max length (255) | **Partial** | TC-006 uses ~100 chars; **255-char create** → [DS-3 TC-009](../DS-3/DS-3_automated-test-cases.md) |
+| TC-008 | Name at max length (100) | **Automated** | TC-006 *(100 chars per validation rules)*; see also [DS-3 TC-009](../DS-3/DS-3_automated-test-cases.md) |
 | TC-009 | Name over max rejected | **Cross-suite** | [DS-3 TC-010](../DS-3/DS-3_automated-test-cases.md) |
 | TC-010 | Special chars in name and description | **Automated** | TC-005 *(spec ID)* |
 | TC-011 | Whitespace-only name invalid | **Automated** | TC-008 *(spec ID)* |
@@ -30,7 +30,7 @@
 | TC-013 | Description at max length | **Not automated** | — |
 | TC-014 | Single-character name boundary | **Not automated** | — |
 
-**Counts:** 14 plan cases — 8 automated in spec (some IDs differ from plan); 5 not automated; 2 partial; 1 cross-suite (TC-009 → DS-3).
+**Counts:** 14 plan cases — 9 automated in spec (some IDs differ from plan); 5 not automated; 1 cross-suite (TC-009 → DS-3 TC-010).
 
 ---
 
@@ -122,7 +122,7 @@ Scenario: Admin opens program creation form with required fields
 ### TC-006 — Duplicate program name is rejected
 
 **Priority:** High | **Type:** Negative  
-**Automation:** **Partial / behavior mismatch** — `TC-007: duplicate program titles can exist as separate list entries` (test tenant *allows* two rows with the same name).
+**Automation:** **Automated** — `TC-007: duplicate program name on create is rejected` (per [validation rules](https://legionqaschool.atlassian.net/wiki/spaces/DS/pages/233111553/Program+Setup+Validation+Rules)).
 
 **Steps**
 
@@ -156,7 +156,7 @@ Scenario: Admin opens program creation form with required fields
 ### TC-008 — Program Name at maximum allowed length
 
 **Priority:** Medium | **Type:** Edge  
-**Automation:** **Partial** — `TC-006: long program name is accepted` (~100 characters, not 255).
+**Automation:** **Automated** — `TC-006: long program name is accepted` (exactly **100** characters).
 
 **Steps**
 

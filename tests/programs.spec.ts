@@ -1,6 +1,11 @@
 import { test, expect } from '../fixtures/didaxis.fixture';
 import { ProgramsPage } from '../pages/ProgramsPage';
 import { uniqueProgramName } from './helpers/didaxis';
+import {
+  expectDuplicateCreateRejected,
+  programNameWithLength,
+  PROGRAM_NAME_MAX_LENGTH,
+} from './helpers/program-validation';
 
 test('TC-001: program creation form shows Program Name and Description', async ({
   page,
@@ -78,7 +83,7 @@ test('TC-006: long program name is accepted and visible', async ({
   page,
   trackProgram,
 }) => {
-  const programName = uniqueProgramName(`Long-${'a'.repeat(100)}`);
+  const programName = programNameWithLength(PROGRAM_NAME_MAX_LENGTH, 'Long');
   const programs = new ProgramsPage(page);
 
   trackProgram(await programs.createProgram(programName, 'Boundary length check'));
@@ -89,7 +94,7 @@ test('TC-006: long program name is accepted and visible', async ({
   await expect(programs.programRow(programName).first()).toBeVisible();
 });
 
-test('TC-007: duplicate program titles can exist as separate list entries', async ({
+test('TC-007: duplicate program name on create is rejected', async ({
   page,
   trackProgram,
 }) => {
@@ -97,12 +102,8 @@ test('TC-007: duplicate program titles can exist as separate list entries', asyn
   const programs = new ProgramsPage(page);
 
   trackProgram(await programs.createProgram(programName, 'First instance'));
-  await expect(programs.programRow(programName)).toHaveCount(1);
-
-  trackProgram(await programs.createProgram(programName, 'Second instance'));
-  await expect(programs.programRow(programName)).toHaveCount(2);
-  await programs.programRow(programName).first().scrollIntoViewIfNeeded();
-  await expect(programs.programRow(programName).first()).toBeVisible();
+  await expect(programs.programRow(programName)).toHaveCount(1, { timeout: 60_000 });
+  await expectDuplicateCreateRejected(programs, programName);
 });
 
 test('TC-008: whitespace-only Program Name does not create a program', async ({
