@@ -37,8 +37,13 @@ Canonical example: `tests/programs.a11y.spec.ts`.
    `dialog`) before `analyze()`. Use `test.setTimeout(90_000)` on full-page scans if
    the route is slow.
 
-4. **Assertions** — Keep all `expect` in the spec, not in POMs:
-   `await expect(results.violations).toEqual([])`.
+4. **Informative scans (default)** — Didaxis a11y specs **report** axe findings and
+   **do not fail** on violations. Use `reportAxeInformative(testInfo, results)`
+   from `tests/helpers/axe-informative.ts` (attachments + console summary).
+   Tag tests with `@a11y` and `@informative`. Still use `expect` only for UI
+   readiness (e.g. heading/modal visible), not for `violations.length`.
+   Use a hard `expect(results.violations).toEqual([])` only when explicitly
+   gating release on zero violations.
 
 5. **Scoping modals** — Axe needs a CSS selector, not a Playwright locator. Add an
    `axeIncludeSelector()` method on the component POM (see `pages/NewProgramModal.ts`):

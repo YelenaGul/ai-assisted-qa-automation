@@ -22,12 +22,12 @@
 | TC-006 | Duplicate not created when error | **Automated** | TC-006 |
 | TC-007 | Case-insensitive duplicate (if rule) | **Automated** | TC-007 |
 | TC-008 | Leading/trailing spaces duplicate | **Automated** | TC-008 |
-| TC-009 | Name at max length valid | **Not automated** | — |
-| TC-010 | Name over max rejected | **Not automated** | — |
-| TC-011 | Duplicate prevention on edit rename | **Not automated** | — |
-| TC-012 | Unicode / accented name | **Not automated** | — |
+| TC-009 | Name at max length valid | **Automated** | TC-009 *(255 chars)* |
+| TC-010 | Name over max rejected | **Automated** | TC-010 *(256 chars)* |
+| TC-011 | Duplicate prevention on edit rename | **Cross-suite** | [DS-2 TC-006](../DS-2/DS-2_automated-test-cases.md) — not in this spec |
+| TC-012 | Unicode / accented name | **Automated** | TC-012 |
 
-**Counts:** 12 plan cases — 8 automated; 4 not automated.
+**Counts:** 12 plan cases — **11 automated** in this spec; **TC-011** covered on edit in DS-2.
 
 ---
 
@@ -154,7 +154,7 @@
 ### TC-009 — Program name at max length is valid
 
 **Priority:** Medium | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-009: program name at max length is valid`
 
 **Steps**
 
@@ -169,7 +169,7 @@
 ### TC-010 — Program name over max length is rejected
 
 **Priority:** Medium | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-010: program name over max length is rejected`
 
 **Steps**
 
@@ -184,7 +184,7 @@
 ### TC-011 — Duplicate prevention on edit rename
 
 **Priority:** Medium | **Type:** Negative  
-**Automation:** **Not automated** — edit flow; see DS-2 TC-006 for partial overlap.
+**Automation:** **Cross-suite** — `tests/ds2-edit-program.spec.ts` → `TC-006: renaming to an existing program name` (edit flow; not duplicated in this file).
 
 **Steps**
 
@@ -199,7 +199,7 @@
 ### TC-012 — Unicode and accented characters in name
 
 **Priority:** Low | **Type:** Edge  
-**Automation:** **Not automated**
+**Automation:** **Automated** — `TC-012: unicode and accented characters in program name are accepted`
 
 **Steps**
 

@@ -5,11 +5,17 @@
 node_modules/
 /test-results/
 /playwright-report/
+/playwright-report-ci/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+.playwright-mcp/
 
 # Local tool installs (not part of the course project)
 /cursor/
 /nodejs/
 /GitHub Copilot/
+
+# Local notes and scratch files
+delete-probe.png
+tips.docx

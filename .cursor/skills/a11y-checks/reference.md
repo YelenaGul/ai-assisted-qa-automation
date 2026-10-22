@@ -9,7 +9,11 @@
 
 ```bash
 npx playwright test tests/programs.a11y.spec.ts --project=chromium-user-1
+npx playwright test --grep @informative
 ```
+
+Informative tests attach `*-summary.md` (and JSON when there are violations) to
+the HTML report; they pass even when axe reports issues.
 
 ## Documented rule disables (test waivers)
 
