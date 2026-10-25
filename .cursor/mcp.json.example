@@ -4,7 +4,7 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "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h5J32XSKQttEBFBlofdSyjcKi56VZWTIHVeM3A5lu1"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "paste-your-token-here-do-not-commit"
       }
     },
     "playwright": {
