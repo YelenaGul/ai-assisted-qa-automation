@@ -4,9 +4,6 @@
 # Local MCP config (copy from .cursor/mcp.json.example; never commit tokens)
 .cursor/mcp.json
 
-# Downloaded CI / Playwright reports (use GitHub Actions artifacts instead)
-/ci-artifacts/
-
 # Playwright
 node_modules/
 /test-results/
