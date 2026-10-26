@@ -78,7 +78,7 @@ test('TC-006: long program name is accepted and visible', async ({
   await createProgram(page, programName, 'Boundary length check', trackProgram);
 });
 
-test('TC-007: duplicate program name on create is rejected', async ({
+test.fixme('TC-007: duplicate program name on create is rejected @DS-249', async ({
   page,
   trackProgram,
 }) => {

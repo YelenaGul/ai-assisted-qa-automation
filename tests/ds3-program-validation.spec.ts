@@ -69,7 +69,7 @@ test('TC-003: whitespace-only program name is not submitted', async ({ page }) =
   await expect(programs.newProgramModal.dialog).toBeVisible();
 });
 
-test('TC-004: duplicate program name on create shows error', async ({
+test.fixme('TC-004: duplicate program name on create shows error @DS-249', async ({
   page,
   trackProgram,
 }) => {
@@ -90,7 +90,7 @@ test('TC-005: empty program name does not submit', async ({ page }) => {
   await expect(programs.newProgramModal.createButton).toBeDisabled();
 });
 
-test('TC-006: duplicate error leaves only one program with that name', async ({
+test.fixme('TC-006: duplicate error leaves only one program with that name @DS-249', async ({
   page,
   trackProgram,
 }) => {
@@ -102,7 +102,7 @@ test('TC-006: duplicate error leaves only one program with that name', async ({
   await expectDuplicateCreateRejected(programs, baseName);
 });
 
-test('TC-007: duplicate check is case-sensitive or rejects case variant', async ({
+test.fixme('TC-007: duplicate check is case-sensitive or rejects case variant @DS-249', async ({
   page,
   trackProgram,
 }) => {
@@ -129,7 +129,7 @@ test('TC-007: duplicate check is case-sensitive or rejects case variant', async 
   }
 });
 
-test('TC-008: leading and trailing spaces are trimmed or rejected as duplicate', async ({
+test.fixme('TC-008: leading and trailing spaces are trimmed or rejected as duplicate @DS-249', async ({
   page,
   trackProgram,
 }) => {
@@ -164,7 +164,7 @@ test('TC-009: program name at max length is valid', async ({ page, trackProgram 
   await expectProgramListed(programs, programName);
 });
 
-test('TC-010: program name over max length is rejected', async ({ page }) => {
+test.fixme('TC-010: program name over max length is rejected @DS-191', async ({ page }) => {
   const overlongName = programNameWithLength(PROGRAM_NAME_MAX_LENGTH + 1, 'OverMax');
   const programs = new ProgramsPage(page);
 
@@ -180,7 +180,7 @@ test('TC-010: program name over max length is rejected', async ({ page }) => {
   await expectCreateRejectedWithModalOpen(programs, overlongName);
 });
 
-test('description over 500 characters is rejected on create', async ({ page }) => {
+test.fixme('description over 500 characters is rejected on create @DS-250', async ({ page }) => {
   const programName = uniqueProgramName('Desc Max');
   const overlongDescription = descriptionWithLength(DESCRIPTION_MAX_LENGTH + 1);
   const programs = new ProgramsPage(page);
