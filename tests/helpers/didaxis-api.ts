@@ -24,8 +24,11 @@ export function isProgramCreatePost(response: Response): boolean {
   }
 }
 
-export function waitForProgramCreateResponse(page: Page) {
-  return page.waitForResponse(isProgramCreatePost);
+export function waitForProgramCreateResponse(page: Page, timeout?: number) {
+  if (timeout === undefined) {
+    return page.waitForResponse(isProgramCreatePost);
+  }
+  return page.waitForResponse(isProgramCreatePost, { timeout });
 }
 
 export async function programIdFromCreateResponse(

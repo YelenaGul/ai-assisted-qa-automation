@@ -61,7 +61,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: authStoragePath(userId),
       },
-      dependencies: ['setup'] as const,
+      dependencies: ['setup'],
       testMatch: didaxisTestMatch,
     })),
     {

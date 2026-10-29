@@ -33,6 +33,15 @@ export class ProgramsPage {
     return this.main.getByText(programName, { exact: true });
   }
 
+  /**
+   * Full program-name text, including leading and trailing spaces.
+   * getByText({ exact: true }) trims whitespace, so "  Name  " and "Name" match the same element.
+   */
+  programNameWithExactSpacing(programName: string): Locator {
+    const escaped = programName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return this.main.getByText(new RegExp(`^${escaped}$`));
+  }
+
   async goto(): Promise<void> {
     await this.page.goto(`${didaxisBaseUrl()}/programs`);
   }
@@ -51,10 +60,11 @@ export class ProgramsPage {
     await this.newProgramModal.description.fill(description);
   }
 
-  async submitNewProgramForm(): Promise<string | null> {
-    const createResponsePromise = waitForProgramCreateResponse(this.page).catch(
-      () => null,
-    );
+  async submitNewProgramForm(createResponseTimeout?: number): Promise<string | null> {
+    const createResponsePromise = waitForProgramCreateResponse(
+      this.page,
+      createResponseTimeout,
+    ).catch(() => null);
     await this.newProgramModal.createButton.click();
     const response = await createResponsePromise;
     if (!response) {
@@ -76,9 +86,10 @@ export class ProgramsPage {
   async attemptCreateProgram(
     programName: string,
     description: string,
+    createResponseTimeout?: number,
   ): Promise<string | null> {
     await this.gotoAndOpenNewProgramForm();
     await this.fillNewProgramForm(programName, description);
-    return this.submitNewProgramForm();
+    return this.submitNewProgramForm(createResponseTimeout);
   }
 }

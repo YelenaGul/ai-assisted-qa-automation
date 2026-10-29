@@ -1,0 +1,35 @@
+---
+description: How this project writes Playwright tests — auth, POM, locators, cleanup, data.
+globs: tests/**
+alwaysApply: false
+---
+
+# Playwright Conventions
+
+## Auth
+
+- **Default:** `tests/auth.setup.ts` (project `setup`) signs in once per configured user and saves `playwright/.auth/<userId>.json`. Didaxis specs run under `chromium-<userId>` with that `storageState` (see `playwright.config.ts`).
+- **Specs:** Import `test` / `expect` from `fixtures/didaxis.fixture` (wraps cleanup + optional legacy login). Do **not** import from `@playwright/test` for Didaxis UI tests.
+- **UI login** only for login-page coverage, or when `DIDAXIS_LEGACY_UI_LOGIN=1`. Never paste credentials into chat; use `.env`.
+
+## Page Objects (see `.cursor/skills/pom-conventions`)
+
+- One class per page or distinct component in `pages/` (`ProgramsPage`, `NewProgramModal`).
+- Locators: `readonly` fields in the constructor; methods for actions only — **no** `expect()` in POMs.
+- Compose components (e.g. `ProgramsPage` holds `NewProgramModal`). Instantiate with `new XxxPage(page)`.
+- When create returns a program UUID, return it from the POM method so the test can `trackProgram(uuid)`.
+
+## Locators
+
+Priority: `getByRole` → `getByLabel` / `getByPlaceholder` → `getByText` → `getByTestId` (comment why). Never CSS, XPath, or substring text that breaks on copy changes. Disambiguate with `.filter({ hasText })`, not `.first()`.
+
+```typescript
+// ❌ page.locator('.btn-primary')
+// ✅ page.getByRole('button', { name: 'Create Program' })
+```
+
+## Data & cleanup (see `.cursor/skills/api-cleanup`)
+
+- Unique names: suffix with `Date.now()` (or similar) so parallel runs do not collide.
+- Every test that **creates** a program calls `trackProgram(uuid)` right after create; the cleanup fixture deletes via `DELETE /api/programs/<uuid>` using `DIDAXIS_API_TOKEN` — not the UI. No manual `afterAll` cleanup blocks.
+- Never hardcode tokens; never delete data the test did not create.

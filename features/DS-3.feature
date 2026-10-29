@@ -1,116 +1,75 @@
 # Generated from Jira DS-3: Program name validation and duplicate prevention
+# UI verified on 2026-10-27 against test.didaxis.studio (browser MCP).
 # Review before automating.
+#
+# Locator hints:
+# - Page heading: Programs
+# - Button: "+ New Program" (accessible name includes "New Program")
+# - Dialog: "New Program"
+# - Textbox: "Program Name" (required, placeholder "e.g. Computer Science BSc")
+# - Textbox: "Description" (optional, placeholder "Brief description")
+# - Button: "Create" (disabled while Program Name is empty or whitespace-only)
+# - Button: "Cancel"
+# - List row actions: "Edit <program name>", "Delete <program name>"
 
 Feature: DS-3 Program name validation and duplicate prevention
 
   # Happy paths
 
-  Scenario: Program name with special characters is created successfully
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I enter "Informatique & IA - Niveau 2" as Program Name
-    And I fill Description with a valid value
-    And I click Create
-    Then the New Program modal closes
-    And the Programs list includes "Informatique & IA - Niveau 2"
-
-  Scenario: Valid unique program name after correcting a duplicate attempt
-    Given I am logged in as an admin user
-    And a program named "Web Development 2026" already exists
-    And I am on the program creation form
-    When I enter "Web Development 2026" as Program Name
-    And I see an error indicating the name already exists
-    And I change Program Name to "Web Development 2027"
-    And I click Create
-    Then the program "Web Development 2027" is created successfully
+  Scenario: Program name with special characters is created and listed
+    Given I am signed in as an admin on the Programs page
+    When I click "+ New Program"
+    And I enter "Informatique & IA - Niveau 2" in "Program Name"
+    And I enter "Full-stack curriculum with ampersand" in "Description"
+    And I click "Create"
+    Then the "New Program" dialog closes
+    And the Programs list shows "Informatique & IA - Niveau 2"
 
   # Negative
 
-  Scenario: Whitespace-only program name is not submitted
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I enter "   " as Program Name
-    And I fill Description with "Whitespace validation test"
-    And I click Create if the button is enabled
-    Then the form is not submitted
-    And the name is trimmed and treated as empty
-    And no new program is added to the Programs list
+  Scenario: Whitespace-only Program Name cannot be submitted
+    Given I am signed in as an admin on the Programs page
+    And the "New Program" dialog is open
+    When I enter "   " in "Program Name"
+    Then the "Create" button is disabled
+    And the "New Program" dialog stays open
+    And the Programs list does not show a program named "   "
 
-  Scenario: Duplicate program name on create shows an error
-    Given I am logged in as an admin user
+  Scenario: Duplicate Program Name is rejected with an error
+    Given I am signed in as an admin on the Programs page
     And a program named "Web Development 2026" already exists
-    And I am on the program creation form
-    When I try to create a new program with Program Name "Web Development 2026"
-    And I fill Description with "Second instance attempt"
-    And I click Create
-    Then I see an error indicating the name already exists
-    And only one program named "Web Development 2026" exists in the list
-
-  Scenario: Case-variant duplicate program name is rejected on create
-    Given I am logged in as an admin user
-    And a program named "Web Development 2026" already exists
-    And I am on the program creation form
-    When I enter "web development 2026" as Program Name
-    And I click Create
-    Then I see an error indicating the name already exists
-    And no second program is created for that name
-
-  Scenario: Program Name longer than 100 characters is rejected on create
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I enter a 101-character string as Program Name
-    Then the Create button is disabled or a validation error is shown
-    And no program is created with that over-length name
-
-  Scenario: Empty Program Name cannot be submitted
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I leave Program Name empty
-    And I fill Description with "Missing name test"
-    Then the Create button is disabled
-    And no program is created
-
-  Scenario: Padded duplicate name is rejected after trim
-    Given I am logged in as an admin user
-    And a program named "Web Development 2026" already exists
-    And I am on the program creation form
-    When I enter "  Web Development 2026  " as Program Name
-    And I click Create
-    Then duplicate-name validation treats the trimmed name as "Web Development 2026"
+    When I click "+ New Program"
+    And I enter "Web Development 2026" in "Program Name"
+    And I enter "Second attempt" in "Description"
+    And I click "Create"
+    Then the "New Program" dialog stays open
     And I see an error indicating the name already exists
+    And the Programs list still shows only one "Web Development 2026"
 
   # Edge cases
 
-  Scenario: Program Name with exactly 100 characters is accepted
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I enter a string of exactly 100 characters as Program Name
-    And I fill Description with "Boundary at maximum"
-    And I click Create
-    Then the program is created with the full 100-character name visible in the list
+  Scenario: Empty Program Name keeps Create disabled
+    Given I am signed in as an admin on the Programs page
+    And the "New Program" dialog is open
+    When I leave "Program Name" empty
+    Then the "Create" button is disabled
+    And the "New Program" dialog stays open
 
-  Scenario: Double-clicking Create does not create duplicate programs
-    Given I am logged in as an admin user
-    And I am on the program creation form
-    When I enter a unique Program Name
-    And I fill Description with "Double submit guard"
-    And I double-click Create quickly
-    Then exactly one new program with that name appears in the list
-
-  Scenario: Duplicate error is accessible and visible in the New Program modal
-    Given I am logged in as an admin user
-    And a program named "Web Development 2026" already exists
-    And I am on the program creation form
-    When I enter "Web Development 2026" as Program Name
-    And I click Create
-    Then an error message about duplicate name is visible to the user
-    And assistive technology can perceive the error (e.g. alert or described field)
+  Scenario: Leading and trailing spaces are removed from the saved Program Name
+    Given I am signed in as an admin on the Programs page
+    When I click "+ New Program"
+    And I enter "  Informatique & IA - Niveau 2  " in "Program Name"
+    And I click "Create"
+    Then the "New Program" dialog closes
+    And the Programs list shows "Informatique & IA - Niveau 2"
+    And the Programs list does not show a program whose name still has those leading or trailing spaces
 
 # ---
 # Ambiguities / gaps (resolve before automation):
-# - DS-3 ACs do not mention the 100-character maximum; Confluence field rules and defect DS-199 define it — confirm as in-scope for this story.
-# - Whitespace AC says trim-then-empty but does not specify disabled Create vs error on click.
-# - Exact duplicate error copy and whether the modal stays open are not defined in ACs.
-# - Edit-flow duplicate validation is covered by DS-2, not DS-3 ACs.
-# - Whether uniqueness is case-sensitive is not stated in the ticket (defects assume case-insensitive).
-# - XSS or malicious input in Program Name is not in ACs.
+# - Ticket says "fill other required fields" on create. On the live form, Program Name is the only required field. Description, Total Program Hours, Default Session Hours, Default Exam Hours, Target Audience, and Focus Areas are optional. Default Session Hours is prefilled with 4 and Default Exam Hours with 3.
+# - Ticket whitespace AC says click Create and the form is not submitted because the name is trimmed and treated as empty. Live UI disables Create for "   " and for an empty name, so Create cannot be clicked. Scenarios assert the disabled button and the dialog staying open.
+# - Exact duplicate error copy is not specified. Live app (2026-10-27) accepts an exact duplicate: the dialog closes, no alert or error is shown, and a second row appears. Known related bugs include DS-249 and DS-201. Do not treat that as the expected result.
+# - Uniqueness rules not stated: case sensitivity ("web development 2026" vs "Web Development 2026"), internal double spaces, and whether a trimmed name that matches an existing name counts as a duplicate.
+# - DS-3 does not state a maximum Program Name length. The field has no maxlength. The list already contains names longer than 100 characters. A 100-character limit appears in other notes, not in this ticket's acceptance criteria.
+# - Shared test data already contains many "Web Development 2026" and "Informatique & IA - Niveau 2…" rows. Automation should use a unique suffix and clean up created programs, while still asserting the ticket's values (special characters, whitespace, duplicate of a name that exists).
+# - Delete removes a row immediately; no confirmation dialog was shown. Cleanup can use the "Delete <program name>" button.

@@ -1,6 +1,12 @@
 ---
 name: jira-ticket-to-gherkin
-description: Turns a Jira ticket's acceptance criteria into structured, reviewable Gherkin test scenarios. Use this skill whenever the user references a Jira ticket (DS-1, DS-2, etc.) and asks for test cases, a test plan, scenarios, or wants to plan testing for a ticket — even if they don't say the word "Gherkin".
+description: >-
+  Turns a Jira ticket's acceptance criteria into structured, reviewable Gherkin
+  test scenarios, then validates them against the live Didaxis app (browser MCP,
+  or agent-browser / Playwright CLI if MCP is unavailable).
+  Use whenever the user references a Jira ticket (DS-1, DS-2, etc.) and asks for
+  test cases, a test plan, scenarios, or wants to plan testing for a ticket — even
+  if they don't say the word "Gherkin".
 ---
 
 # Jira Ticket to Gherkin
@@ -38,13 +44,39 @@ Build one Gherkin `.feature` file:
 - **Use real, specific values** from the ticket — never placeholders like `<name>` or `example.com` unless the ticket itself uses them.
 - End the file with a comment block listing **ambiguities or gaps** in the ticket's acceptance criteria so QA can resolve them before automation.
 
-### 3. Save output
+### 3. Validate against the live app (required)
+
+Do **not** treat the first Gherkin draft as final until you have walked the real UI.
+
+1. **Base URL** — `DIDAXIS_URL` from `.env` (same target Playwright uses).
+2. **Explore the UI** — use the first option that works (same evidence either way: roles, labels, flows, messages):
+
+   | Priority | Tool | How |
+   |----------|------|-----|
+   | 1 | **Browser MCP** (`cursor-ide-browser`) | `browser_navigate` → `browser_lock` → `browser_snapshot` / interact → `browser_unlock` |
+   | 2 | **agent-browser CLI** | `npx agent-browser open <url>` → `snapshot` (a11y tree + refs) → `click` / `find role …` — run `agent-browser skills get` or `npx skills add vercel-labs/agent-browser` if commands are unfamiliar; reuse `playwright/.auth/` via `state load` / `--state` when possible |
+   | 3 | **Playwright CLI** | `npx playwright codegen <url>` for locator discovery; or `npx playwright test --headed` on a minimal exploratory spec; load `storageState` from `playwright/.auth/` after `npx playwright test --project=setup` |
+
+   If none of the above is available, stop and ask the human to enable browser MCP or install `agent-browser` — do not ship Gherkin-only plans for UI tickets.
+
+3. **Auth** — sign in via the login page (credentials from `.env`; never paste secrets into chat). If login is blocked (captcha, SSO), stop and ask the human to complete auth, then continue.
+4. **For each scenario group**, confirm:
+   - Navigation path and starting state match reality
+   - Control names usable for automation: roles, accessible names, labels (not guessed from Jira copy)
+   - Success and failure outcomes (messages, disabled buttons, list updates) match what you see
+   - ACs that are impossible or different on test env → record under ambiguities, do not fake steps
+5. **Revise** `features/<ticket-key>.feature`: fix wrong labels/steps, add scenarios the app exposes but Jira omitted, tighten `Then` clauses to observable UI facts.
+6. **Optional note** at the top of the feature file (comment): `# UI verified on <date> against <host>` and bullet any locator hints for test-writer (role + name only).
+
+Skip live UI exploration only when the ticket is explicitly non-UI (API-only, docs) — say so in ambiguities. Record which tool you used in the UI verification summary.
+
+### 4. Save output
 
 - Create `features/` at the project root if it does not exist.
 - Save as `features/<ticket-key>.feature` (e.g. `features/DS-2.feature`).
-- Tell the user where the file was saved and summarize scenario counts by group.
+- Tell the user where the file was saved, scenario counts by group, and a short **UI verification summary** (what you exercised, what differed from Jira).
 
-Do **not** write Playwright tests in this step unless the user explicitly asks after reviewing the feature file.
+Do **not** write Playwright tests in this skill unless the user explicitly asks after reviewing the feature file.
 
 ## Feature file template
 
@@ -86,7 +118,9 @@ Feature: <TICKET-KEY> <short title from ticket>
 Before finishing:
 
 - [ ] Every AC from Jira has ≥1 scenario mapping (note in ambiguities if an AC is untestable as written)
+- [ ] **Live app explored** for UI tickets; Gherkin updated from what you saw (or skip reason documented)
 - [ ] Scenario titles describe the **outcome**, not the implementation
+- [ ] Steps use **real** control labels/names from the app where the UI is involved
 - [ ] Steps are executable by a human tester without reading code
 - [ ] No duplicate scenarios that only differ by wording
 - [ ] Ambiguities block lists open questions, not guesses disguised as tests
