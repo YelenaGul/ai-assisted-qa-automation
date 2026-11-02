@@ -1,8 +1,8 @@
 ---
-  cause. Use whenever a build fails.
 name: triage
-model: grok-4.6[effort=medium,fast=true]
+model: composer-2.5
 description: Diagnoses a red CI run against the repo and classifies the
+  cause. Use whenever a build fails.
 readonly: true
 ---
 

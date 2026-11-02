@@ -1,35 +1,257 @@
 ---
-description: How this project writes Playwright tests — auth, POM, locators, cleanup, data.
+description: How this project writes Playwright tests — auth, POM, locators, data and cleanup
 globs: tests/**
 alwaysApply: false
 ---
 
 # Playwright Conventions
 
-## Auth
+Full standard for Didaxis specs under `tests/`. Deep dives: `.cursor/skills/pom-conventions`, `api-cleanup`, `programs-network-edge-cases`, `a11y-checks`, `playwright-test-config`; auth: `auth-strategy.md`.
 
-- **Default:** `tests/auth.setup.ts` (project `setup`) signs in once per configured user and saves `playwright/.auth/<userId>.json`. Didaxis specs run under `chromium-<userId>` with that `storageState` (see `playwright.config.ts`).
-- **Specs:** Import `test` / `expect` from `fixtures/didaxis.fixture` (wraps cleanup + optional legacy login). Do **not** import from `@playwright/test` for Didaxis UI tests.
-- **UI login** only for login-page coverage, or when `DIDAXIS_LEGACY_UI_LOGIN=1`. Never paste credentials into chat; use `.env`.
+## 1. Locators
 
-## Page Objects (see `.cursor/skills/pom-conventions`)
+**Standard:** Prefer user-facing locators in order — `getByRole` → `getByLabel` / `getByPlaceholder` → `getByText` → `getByTestId` (comment why); disambiguate with `.filter({ hasText })`, never CSS/XPath or `.first()` on ambiguous matches.
 
-- One class per page or distinct component in `pages/` (`ProgramsPage`, `NewProgramModal`).
-- Locators: `readonly` fields in the constructor; methods for actions only — **no** `expect()` in POMs.
-- Compose components (e.g. `ProgramsPage` holds `NewProgramModal`). Instantiate with `new XxxPage(page)`.
-- When create returns a program UUID, return it from the POM method so the test can `trackProgram(uuid)`.
-
-## Locators
-
-Priority: `getByRole` → `getByLabel` / `getByPlaceholder` → `getByText` → `getByTestId` (comment why). Never CSS, XPath, or substring text that breaks on copy changes. Disambiguate with `.filter({ hasText })`, not `.first()`.
+✅ **Good** (from `pages/ProgramsPage.ts`):
 
 ```typescript
-// ❌ page.locator('.btn-primary')
-// ✅ page.getByRole('button', { name: 'Create Program' })
+this.newProgramButton = this.main.getByRole('button', { name: /new program/i });
+return this.table.getByRole('row').filter({
+  has: this.page.getByText(programName, { exact: true }),
+});
 ```
 
-## Data & cleanup (see `.cursor/skills/api-cleanup`)
+❌ **Bad:**
 
-- Unique names: suffix with `Date.now()` (or similar) so parallel runs do not collide.
-- Every test that **creates** a program calls `trackProgram(uuid)` right after create; the cleanup fixture deletes via `DELETE /api/programs/<uuid>` using `DIDAXIS_API_TOKEN` — not the UI. No manual `afterAll` cleanup blocks.
-- Never hardcode tokens; never delete data the test did not create.
+```typescript
+page.locator('.programs-table tbody tr').first();
+page.locator('xpath=//button[contains(@class,"primary")]');
+```
+
+**Why:** CSS/XPath and `.first()` break when markup or row order changes, producing wrong-element clicks and false greens.
+
+## 2. Waiting
+
+**Standard:** No `waitForTimeout`; use auto-retrying web-first `expect(locator).toBeVisible()` / `.toBeEnabled()` / `.toHaveText()` after POM actions.
+
+✅ **Good** (from `tests/ds1-create-program.spec.ts` pattern):
+
+```typescript
+await programs.openNewProgramForm();
+await expect(programs.newProgramModal.dialog).toBeVisible();
+await expect(programs.newProgramModal.createButton).toBeEnabled();
+```
+
+❌ **Bad** (anti-pattern still in `tests/ds2-edit-program.spec.ts` — migrate away):
+
+```typescript
+await saveProgramButton(dialog).click();
+await page.waitForTimeout(1500);
+if (await editProgramDialog(page).isVisible()) { … }
+```
+
+**Why:** Fixed sleeps race slow CI; snapshot `await isVisible()` does not retry like web-first `expect`.
+
+## 3. Page Objects
+
+**Standard:** All UI actions go through `pages/`; locators as `readonly` constructor fields; methods act only — no `expect()` inside POMs; specs describe intent.
+
+✅ **Good** (from `pages/ProgramsPage.ts` + spec usage):
+
+```typescript
+// pages/ProgramsPage.ts
+async goto(): Promise<void> {
+  await this.page.goto(`${didaxisBaseUrl()}/programs`);
+}
+// tests/programs.spec.ts
+const programs = new ProgramsPage(page);
+await programs.goto();
+await expect(programs.heading).toBeVisible();
+```
+
+❌ **Bad:**
+
+```typescript
+test('create', async ({ page }) => {
+  await page.getByRole('button', { name: 'New Program' }).click();
+  expect(await page.getByRole('dialog').isVisible()).toBe(true);
+});
+```
+
+**Why:** Inline locators and assertions in specs duplicate logic and drift from shared POM fixes.
+
+## 4. Auth
+
+**Standard:** Default stored session from the `setup` project (`auth.setup.ts` → `playwright/.auth/<userId>.json`); UI login only for login-page tests; API login for scripts/bulk/stale state — see `auth-strategy.md`.
+
+✅ **Good:**
+
+```typescript
+import { test, expect } from '../fixtures/didaxis.fixture';
+// chromium-<userId> project supplies storageState; no per-test login.
+const programs = new ProgramsPage(page);
+await programs.goto();
+```
+
+❌ **Bad** (for a programs feature test):
+
+```typescript
+test.use({ storageState: { cookies: [], origins: [] } });
+await page.goto('/login');
+await page.getByLabel('Email').fill(process.env.DIDAXIS_EMAIL!);
+```
+
+**Why:** Re-logging every test slows the suite and hides session bugs the product sees in normal use.
+
+## 5. Test data
+
+**Standard:** Unique names via `uniqueProgramName()` / `Date.now()` suffix; every created program calls `trackProgram(uuid)` immediately; cleanup via fixture DELETE — no manual `afterAll`, no hardcoded tokens.
+
+✅ **Good** (from `tests/helpers/didaxis.ts`):
+
+```typescript
+const createResponse = waitForProgramCreateResponse(page);
+await createProgramButton(dialog).click();
+trackProgram(await programIdFromCreateResponse(await createResponse));
+```
+
+❌ **Bad:**
+
+```typescript
+const name = 'Test Program';
+await programs.createProgram(name, '');
+test.afterAll(async () => { await request.delete(url, { headers: { Authorization: 'Bearer sk-…' } }); });
+```
+
+**Why:** Colliding names flake in parallel runs; manual cleanup and hardcoded tokens leak data and secrets.
+
+## 6. API testing
+
+**Standard:** Use `tests/helpers/didaxis-api.ts` and `request` with `DIDAXIS_API_TOKEN` or login helper; assert status/body via helpers — not ad-hoc URLs in specs.
+
+✅ **Good** (from `tests/manual/didaxis-programs-cleanup.spec.ts` pattern / helpers):
+
+```typescript
+const ids = await listProgramIds(request);
+await deleteProgramById(request, programId);
+```
+
+❌ **Bad:**
+
+```typescript
+await fetch('https://test.didaxis.studio/api/programs', {
+  headers: { Authorization: `Bearer ${'paste-token-here'}` },
+});
+```
+
+**Why:** Central helpers handle 401 refresh, UUID validation, and env-based auth consistently.
+
+## 7. Network mocking
+
+**Standard:** Deterministic edge cases use `page.route` + POM actions; one tag per test; never mock the endpoint under test; assert UI copy observed on live app — see `.cursor/skills/programs-network-edge-cases/SKILL.md`. *(No `page.route` in repo yet — add per skill.)*
+
+✅ **Good** (advised pattern):
+
+```typescript
+test('empty programs list', { tag: ['@programs-empty-list'] }, async ({ page }) => {
+  await page.route('**/api/programs', (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
+  });
+  const programs = new ProgramsPage(page);
+  await programs.goto();
+  await expect(/* empty-state locator from live UI pass */).toBeVisible();
+});
+```
+
+❌ **Bad:**
+
+```typescript
+await page.route('**/api/programs', (r) => r.fulfill({ status: 503 }));
+await page.locator('.error').filter({ hasText: 'Something went wrong' }).click();
+```
+
+**Why:** Invented copy and inline locators fail when the app message differs; mocking the endpoint you intend to verify proves nothing.
+
+## 8. Accessibility
+
+**Standard:** Programs coverage = strict axe (`withTags(['wcag2a','wcag2aa'])`, `expect(results.violations).toEqual([])`) + keyboard test via POM; one tag per test; report violations and stop — no `.disableRules()` — see `.cursor/skills/a11y-checks/SKILL.md`. *(Repo still has informative legacy scans — migrate to strict gate.)*
+
+✅ **Good** (target pattern):
+
+```typescript
+const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+expect(results.violations).toEqual([]);
+await page.keyboard.press('Tab');
+await expect(programs.newProgramButton).toBeFocused();
+await page.keyboard.press('Enter');
+await expect(programs.newProgramModal.dialog).toBeVisible();
+```
+
+❌ **Bad** (from legacy `tests/programs.a11y.spec.ts`):
+
+```typescript
+.disableRules(['button-name'])
+await reportAxeInformative(testInfo, results, 'new-program-modal');
+```
+
+**Why:** Rule disables and non-gating scans hide WCAG regressions users hit in production.
+
+## 9. Assertions
+
+**Standard:** All `expect(...)` live in specs/helpers used by specs — web-first matchers; match observable UI/API outcomes from plans, not implementation details.
+
+✅ **Good** (from `tests/helpers/program-validation.ts`):
+
+```typescript
+await expect(programs.programRow(existingName)).toHaveCount(1, { timeout: 60_000 });
+```
+
+❌ **Bad** (from `tests/helpers/program-validation.ts` — migrate):
+
+```typescript
+const blockedInDialog =
+  (await programs.newProgramModal.nameValidationError.isVisible()) ||
+  (await programs.newProgramModal.dialog.isVisible());
+expect(blockedInDialog).toBeTruthy();
+```
+
+**Why:** Boolean snapshots of `isVisible()` do not auto-retry and pass/fail on timing luck.
+
+## 10. Anti-flake
+
+**Standard:** No fixed timeouts or ambiguous `.first()`; pin time with `page.clock.install()` for relative dates; runner: `fullyParallel: true`, `retries: process.env.CI ? 2 : 0` (max 2), no `workers: 1`, pinned `locale`/`timezoneId` — see `playwright.config.ts` and `.cursor/skills/playwright-test-config/SKILL.md`.
+
+✅ **Good** (config + advised clock):
+
+```typescript
+await page.clock.install({ time: new Date('2026-11-02T18:00:00-05:00') });
+await programs.goto();
+await expect(programs.programRow(name)).toHaveCount(1);
+```
+
+❌ **Bad** (from `tests/programs.spec.ts` — tighten locators instead):
+
+```typescript
+await programs.programRow(programName).first().scrollIntoViewIfNeeded();
+await expect(programs.programRow(programName).first()).toBeVisible();
+```
+
+**Why:** `.first()` on a filtered row still fails when the filter matches zero or many; unfrozen clocks make “today” assertions drift between local and CI.
+
+---
+
+## Do / Don't quick reference
+
+| Do | Don't |
+|----|--------|
+| `getByRole` / label / text locators in POMs | CSS, XPath, brittle substring text |
+| `expect(locator).toBeVisible()` / `.toHaveText()` | `waitForTimeout`, `expect(await loc.isVisible())` |
+| `ProgramsPage` / `NewProgramModal` for UI | Inline locators in specs |
+| `fixtures/didaxis.fixture` + `storageState` setup | UI login in every feature test |
+| `trackProgram(uuid)` after real creates | Hardcoded tokens, `afterAll` DELETE hacks |
+| `didaxis-api` helpers for HTTP | Raw fetch with pasted secrets |
+| `page.route` for edge cases; live copy for asserts | Mock the endpoint under test; invent error strings |
+| Strict axe + keyboard via POM; one tag per test | `.disableRules()` to go green |
+| Web-first `expect` in specs | `expect()` inside `pages/` |
+| `page.clock.install()` for relative dates | `.first()` when filter should be enough |

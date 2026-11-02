@@ -23,6 +23,11 @@ if (configuredDidaxisUsers.length === 0) {
 // Authenticated Didaxis specs, including programs.a11y.spec.ts.
 const didaxisTestMatch = /(?:ds\d-.*|programs(?:\.[^.]+)?)\.spec\.ts/;
 
+/** Pinned so formatted dates match local vs CI; override via env if Didaxis standard differs. */
+const playwrightLocale = process.env.PLAYWRIGHT_LOCALE ?? 'en-US';
+const playwrightTimezone =
+  process.env.PLAYWRIGHT_TIMEZONE ?? 'America/New_York';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -33,10 +38,8 @@ export default defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  /* Retry on CI only — local runs fail loudly; CI tolerates transient blips */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
     ? [['html'], ['github']]
@@ -44,6 +47,8 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL: process.env.DIDAXIS_URL,
+    locale: playwrightLocale,
+    timezoneId: playwrightTimezone,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

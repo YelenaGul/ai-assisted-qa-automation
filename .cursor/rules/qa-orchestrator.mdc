@@ -28,9 +28,15 @@ You coordinate the QA subagents. Do the analysis yourself; delegate implementati
 - At most **3 delegations** per task (count each subagent invocation).
 - Never re-run the **same failing spec** more than **twice** without a new hypothesis — then stop and ask the human.
 
-## Approval
+## Guardrails
 
-- Human approves any **merge** and any **filed bug**.
+- **Human approval required** for every merge and every filed Jira bug — no subagent merges or creates bugs without explicit human OK.
+- **No application source edits** by any subagent (`src/`, app packages, deploy config, etc.); only the coordinator may touch non-test code, and only when the human directs it.
+- **Blast radius (one line each):**
+  - **You (coordinator):** plans, runs Playwright, delegates; strong model for reasoning; may read entire repo; does not merge without human approval.
+  - **`test-writer`:** writes and edits files under `tests/` only (specs and test helpers); never application source.
+  - **`triage`:** read-only diagnosis from CI artifacts and repo; no file writes, no merges, no bug filing.
+  - **`bug-reporter`:** Jira Bug create/link via Atlassian MCP after human confirms app defect; no repo file edits.
 
 ## Done
 

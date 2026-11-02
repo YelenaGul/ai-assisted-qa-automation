@@ -38,7 +38,7 @@ Build one Gherkin `.feature` file:
 - **One Feature**, named after the ticket (use ticket key + summary, e.g. `Feature: DS-2 Edit existing program details`).
 - **Cover every acceptance criterion** with at least one Scenario.
 - **Negative scenarios** — what should NOT happen (invalid input, unauthorized action, failed save, wrong UI state).
-- **Edge-case scenarios** — boundaries, empty inputs, duplicates, special characters, max length, single-item lists, etc.
+- **Edge-case scenarios** — boundaries, empty inputs, duplicates, special characters, max length, single-item lists, **API/network failures on programs** (503 save, empty list, malformed JSON, 401/403/404/5xx when relevant), etc.
 - **Given / When / Then** — Given sets the starting state, When is the action under test, Then is the observable expected outcome. Use `And` / `But` only to chain steps in the same phase.
 - **Group scenarios** with comments: `# Happy paths`, `# Negative`, `# Edge cases`.
 - **Use real, specific values** from the ticket — never placeholders like `<name>` or `example.com` unless the ticket itself uses them.
@@ -64,6 +64,7 @@ Do **not** treat the first Gherkin draft as final until you have walked the real
    - Navigation path and starting state match reality
    - Control names usable for automation: roles, accessible names, labels (not guessed from Jira copy)
    - Success and failure outcomes (messages, disabled buttons, list updates) match what you see
+   - For **network/API edge cases** on programs, note observed error and empty-state copy in the feature file (or “no visible message”) for test-writer — see `.cursor/skills/programs-network-edge-cases/SKILL.md`
    - ACs that are impossible or different on test env → record under ambiguities, do not fake steps
 5. **Revise** `features/<ticket-key>.feature`: fix wrong labels/steps, add scenarios the app exposes but Jira omitted, tighten `Then` clauses to observable UI facts.
 6. **Optional note** at the top of the feature file (comment): `# UI verified on <date> against <host>` and bullet any locator hints for test-writer (role + name only).

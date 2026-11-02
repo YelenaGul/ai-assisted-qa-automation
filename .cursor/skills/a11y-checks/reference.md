@@ -9,23 +9,30 @@
 
 ```bash
 npx playwright test tests/programs.a11y.spec.ts --project=chromium-user-1
-npx playwright test --grep @informative
+npx playwright test --grep @programs-a11y
 ```
 
-Informative tests attach `*-summary.md` (and JSON when there are violations) to
-the HTML report; they pass even when axe reports issues.
+Strict tests fail when axe reports WCAG 2 A/AA violations under
+`.withTags(['wcag2a', 'wcag2aa'])`.
 
-## Documented rule disables (test waivers)
+## Policy (current)
 
-| Rule ID | Where | Reason |
-|---------|--------|--------|
-| `button-name` | New Program modal scoped scan | Mantine dialog close control has no accessible name; waiver is scoped to the modal via `.include()`, not the full page. |
+- **Gating tests:** `expect(results.violations).toEqual([])` — no `.disableRules()` to go green.
+- **Violations:** Report to human / file Jira; fix the app, then re-run.
+- **Scoping:** `.include()` / `.exclude()` only for noisy third-party regions, with an inline comment why.
 
-When adding a row here, link a Jira ticket if one exists.
+## Legacy (repo may still contain until migrated)
+
+| Item | Notes |
+|------|--------|
+| `@informative` + `reportAxeInformative` | Non-gating audits only; do not add new gating specs this way |
+| `.disableRules(['button-name'])` on New Program modal | **Do not extend** — violates current policy; replace with app fix or scoped `.exclude()` of a named third-party node with comment |
+
+When retiring a legacy waiver, remove the row and link the fixing Jira ticket.
 
 ## axe rule IDs (common)
 
-Use the string `id` from violation output with `.disableRules(['id'])`:
+Use violation `id` strings in bug reports (not for `.disableRules()` on gating tests):
 
 - `button-name` — buttons without discernible text
 - `color-contrast` — insufficient contrast

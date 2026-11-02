@@ -10,81 +10,102 @@ description: >-
 # Accessibility checks (axe + Playwright)
 
 Automated a11y tests run **axe** in the browser via `@axe-core/playwright`.
-They catch many WCAG issues; they do not replace keyboard-only or screen reader
-testing.
+They catch many WCAG issues; complement them with **keyboard** tests axe cannot
+perform.
 
-Canonical example: `tests/programs.a11y.spec.ts`.
+Reference implementation target: **`tests/programs.a11y.spec.ts`** (extend to
+match this skill when implementing — legacy informative scans in repo predate
+the strict policy below).
 
-## When to use which scan
+## Programs page — required coverage
 
-| Goal | Pattern |
-|------|---------|
-| Whole route after load | `new AxeBuilder({ page }).analyze()` after POM `goto` + stable `expect` |
-| Dialog / panel only | `.include(await component.axeIncludeSelector())` — selector lives on the POM |
-| Known third-party / tracked app defect | `.disableRules([...])` with an inline comment; prefer a Jira bug over silent waivers |
+Add or maintain **two tests** in `tests/programs.a11y.spec.ts` (or sibling
+`*.a11y.spec.ts` for other routes). **One Playwright tag per test** (single
+string), e.g. `{ tag: ['@programs-a11y-axe'] }` and
+`{ tag: ['@programs-a11y-keyboard'] }`.
 
-## Steps
+Navigate with **`ProgramsPage`** / **`NewProgramModal`** only — **no inline
+locators** in the spec (see [pom-conventions](../pom-conventions/SKILL.md)).
 
-1. **File naming** — Put a11y specs in `tests/<feature>.a11y.spec.ts`. They are
-   picked up by `didaxisTestMatch` in `playwright.config.ts` (same as `programs.spec.ts`).
+### 1. WCAG axe scan (strict)
 
-2. **Imports** — Use `AxeBuilder` from `@axe-core/playwright`. Import `test` and
-   `expect` from `fixtures/didaxis.fixture` (authenticated Didaxis session). Follow
-   [pom-conventions](../pom-conventions/SKILL.md): no inline locators in specs.
+1. `ProgramsPage.goto()`; stabilize with web-first `expect` (e.g.
+   `programs.heading` visible).
+2. Run:
 
-3. **Stabilize before scan** — Navigate and open UI through Page Objects. Assert the
-   target is visible (e.g. `expect(programs.heading).toBeVisible()` or modal
-   `dialog`) before `analyze()`. Use `test.setTimeout(90_000)` on full-page scans if
-   the route is slow.
+```typescript
+const results = await new AxeBuilder({ page })
+  .withTags(['wcag2a', 'wcag2aa'])
+  .analyze();
+expect(results.violations).toEqual([]);
+```
 
-4. **Informative scans (default)** — Didaxis a11y specs **report** axe findings and
-   **do not fail** on violations. Use `reportAxeInformative(testInfo, results)`
-   from `tests/helpers/axe-informative.ts` (attachments + console summary).
-   Tag tests with `@a11y` and `@informative`. Still use `expect` only for UI
-   readiness (e.g. heading/modal visible), not for `violations.length`.
-   Use a hard `expect(results.violations).toEqual([])` only when explicitly
-   gating release on zero violations.
+3. **Scoping** — Prefer full page after load. Use `.include(...)` /
+   `.exclude(...)` only when a **third-party widget** adds known noise **outside**
+   the surface under test; **comment why** in the spec. Derive include selectors
+   from POM helpers such as `NewProgramModal.axeIncludeSelector()` (CSS is for
+   axe only, not for test actions).
 
-5. **Scoping modals** — Axe needs a CSS selector, not a Playwright locator. Add an
-   `axeIncludeSelector()` method on the component POM (see `pages/NewProgramModal.ts`):
-   derive `[role=...][aria-labelledby=...]` or `[aria-label=...]` from the live DOM;
-   throw if the dialog has no accessible name.
+4. **Violations** — If `violations` is non-empty: **report** ids, impact, and
+   affected nodes to the human/coordinator and **stop**. Do **not** use
+   `.disableRules()` to make the test green. File or link an app bug; fix the
+   product, then re-run.
 
-6. **Rule disables** — Only disable specific axe rule IDs when the violation is
-   understood and tracked (comment why). Example in repo: Mantine close control and
-   `button-name` on the New Program modal. Do not disable rules to make a failing
-   test pass without documenting the defect.
+Use `test.setTimeout(90_000)` on slow full-page scans if needed.
 
-7. **Data cleanup** — A11y tests that create programs still need
-   [api-cleanup](../api-cleanup/SKILL.md). Read-only scans do not.
+### 2. Keyboard — open New Program (axe cannot verify this)
 
-8. **Tags** — Tag stable regression scans with `{ tag: '@regression' }` when they
-   belong in the regression suite.
+1. `ProgramsPage.goto()`; assert page ready via POM-backed `expect`.
+2. **Tab** from the document until the **primary control** on the programs page
+   has focus — use the POM locator (e.g. `programs.newProgramButton`):
+   `await expect(programs.newProgramButton).toBeFocused()` after each `Tab` or
+   in a bounded loop with a clear failure message.
+3. `await page.keyboard.press('Enter')`.
+4. `await expect(programs.newProgramModal.dialog).toBeVisible()`.
 
-## Adding coverage for a new surface
+Use **role-based** locators exposed on the POM throughout; never
+`page.locator('.…')` in the spec. If tab order is unstable, add a focused
+helper on **`ProgramsPage`** in `pages/` (coordinator/human) — do not bypass
+the POM from the spec.
+
+## Shared conventions
+
+| Topic | Rule |
+|-------|------|
+| **Imports** | `AxeBuilder` from `@axe-core/playwright`; `test` / `expect` from `fixtures/didaxis.fixture` |
+| **File naming** | `tests/<feature>.a11y.spec.ts` — matched by `didaxisTestMatch` in `playwright.config.ts` |
+| **Tags** | Exactly **one** tag string per test |
+| **Assertions in POMs** | None — keyboard and axe expectations live in the spec |
+| **Data** | Read-only a11y tests need no `trackProgram`; creating data still follows [api-cleanup](../api-cleanup/SKILL.md) |
+| **Rule disables** | **Forbidden** for strict gating tests — never `.disableRules()` to pass with known violations |
+
+## Informative scans (legacy / optional)
+
+`reportAxeInformative` in `tests/helpers/axe-informative.ts` may attach findings
+without failing. Use only when the human explicitly wants a **non-gating** audit.
+Do not add new `.disableRules()` waivers; migrate gating coverage to strict
+`expect(results.violations).toEqual([])` + app fixes.
+
+## Adding coverage for another surface
 
 1. Ensure a POM exists for the page or component.
-2. Create or extend `tests/<feature>.a11y.spec.ts`.
-3. Reach the UI state under test via POM methods.
-4. Run axe (full page or `.include(...)`).
-5. If violations appear: fix the app when in scope; otherwise file a bug and use a
-   scoped disable only for that rule + component until fixed.
+2. Create `tests/<feature>.a11y.spec.ts` with one strict axe test + keyboard
+   flows axe cannot cover (when applicable).
+3. Reach UI state via POM; run axe with `withTags(['wcag2a', 'wcag2aa'])`.
+4. On violations: report and stop — fix app or file bug.
 
-## Debugging failures
+## Debugging
 
-- **Non-empty `violations`** — Log or inspect `results.violations` in the trace;
-  each item has `id`, `impact`, `description`, and `nodes` with selectors.
-- **Timeout** — Usually navigation or auth; confirm fixture and increase timeout
-  only after the page is visibly ready.
-- **Flaky include selector** — Dialog must be open and named; missing `aria-label` /
-  `aria-labelledby` throws from `axeIncludeSelector()`.
+- **Non-empty `violations`** — Inspect `results.violations` in trace (`id`, `impact`, `nodes`).
+- **Keyboard** — Confirm tab order on the live page (Browser MCP / headed run); align POM primary control with product design.
+- **Scoped include** — Dialog must be open and named; missing `aria-label` / `aria-labelledby` throws from `axeIncludeSelector()`.
 
 ## Output
 
-- New or updated `tests/*.a11y.spec.ts`
-- Optional POM helper `axeIncludeSelector()` on modals or regions being scoped
-- No assertions inside `pages/`
+- Updated `tests/*.a11y.spec.ts`
+- Optional POM `axeIncludeSelector()` or keyboard helpers on `pages/`
+- Violation report for humans when scan fails — not silent waivers
 
 ## Reference
 
-Known waived rules and rationale: [reference.md](reference.md)
+Historical waivers and run commands: [reference.md](reference.md)
