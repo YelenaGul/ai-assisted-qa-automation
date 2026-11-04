@@ -60,6 +60,10 @@ export class ProgramsPage {
     await this.newProgramModal.description.fill(description);
   }
 
+  async cancelNewProgramForm(): Promise<void> {
+    await this.newProgramModal.cancelButton.click();
+  }
+
   async submitNewProgramForm(createResponseTimeout?: number): Promise<string | null> {
     const createResponsePromise = waitForProgramCreateResponse(
       this.page,

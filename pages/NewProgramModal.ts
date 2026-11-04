@@ -5,6 +5,7 @@ export class NewProgramModal {
   readonly programName: Locator;
   readonly description: Locator;
   readonly createButton: Locator;
+  readonly cancelButton: Locator;
   readonly nameValidationError: Locator;
 
   constructor(page: Page) {
@@ -12,6 +13,7 @@ export class NewProgramModal {
     this.programName = this.dialog.getByRole('textbox', { name: /program name/i });
     this.description = this.dialog.getByRole('textbox', { name: 'Description' });
     this.createButton = this.dialog.getByRole('button', { name: 'Create' });
+    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
     this.nameValidationError = this.dialog.getByText(
       /already exists|duplicate|name.*taken|too long|maximum|exceeds|100 character/i,
     );
