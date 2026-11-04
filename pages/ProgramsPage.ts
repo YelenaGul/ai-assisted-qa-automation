@@ -4,6 +4,7 @@ import {
   waitForProgramCreateResponse,
 } from '../tests/helpers/didaxis-api';
 import { didaxisBaseUrl } from '../tests/helpers/didaxis-env';
+import { EditProgramModal } from './EditProgramModal';
 import { NewProgramModal } from './NewProgramModal';
 
 export class ProgramsPage {
@@ -13,6 +14,7 @@ export class ProgramsPage {
   readonly newProgramButton: Locator;
   readonly table: Locator;
   readonly newProgramModal: NewProgramModal;
+  readonly editProgramModal: EditProgramModal;
 
   constructor(page: Page) {
     this.page = page;
@@ -21,6 +23,7 @@ export class ProgramsPage {
     this.newProgramButton = this.main.getByRole('button', { name: /new program/i });
     this.table = this.main.getByRole('table');
     this.newProgramModal = new NewProgramModal(page);
+    this.editProgramModal = new EditProgramModal(page);
   }
 
   programRow(programName: string): Locator {
@@ -40,6 +43,16 @@ export class ProgramsPage {
   programNameWithExactSpacing(programName: string): Locator {
     const escaped = programName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return this.main.getByText(new RegExp(`^${escaped}$`));
+  }
+
+  editProgramButton(programName: string): Locator {
+    return this.programRow(programName).getByRole('button', {
+      name: `Edit ${programName}`,
+    });
+  }
+
+  programDescriptionInRow(programName: string, description: string): Locator {
+    return this.programRow(programName).getByText(description, { exact: true });
   }
 
   async goto(): Promise<void> {
@@ -91,5 +104,27 @@ export class ProgramsPage {
     await this.gotoAndOpenNewProgramForm();
     await this.fillNewProgramForm(programName, description);
     return this.submitNewProgramForm(createResponseTimeout);
+  }
+
+  async openEditDialog(programName: string): Promise<void> {
+    const editButton = this.editProgramButton(programName);
+    await editButton.scrollIntoViewIfNeeded();
+    await editButton.click();
+  }
+
+  async fillEditProgramName(programName: string): Promise<void> {
+    await this.editProgramModal.programName.fill(programName);
+  }
+
+  async fillEditProgramDescription(description: string): Promise<void> {
+    await this.editProgramModal.description.fill(description);
+  }
+
+  async saveEdit(): Promise<void> {
+    await this.editProgramModal.saveButton.click();
+  }
+
+  async cancelEdit(): Promise<void> {
+    await this.editProgramModal.cancelButton.click();
   }
 }
