@@ -1,5 +1,6 @@
 # Generated from Jira DS-3: Program name validation and duplicate prevention
 # UI verified on 2026-10-27 against test.didaxis.studio (browser MCP).
+# Backlog run 2026-11-04: live UI recon skipped because DIDAXIS_EMAIL and DIDAXIS_PASSWORD are unset. Scenarios below were not re-checked in a browser on this run. Prior 2026-10-27 notes are unchanged.
 # Review before automating.
 #
 # Locator hints:
