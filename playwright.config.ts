@@ -21,7 +21,7 @@ if (configuredDidaxisUsers.length === 0) {
 }
 
 // Authenticated Didaxis specs, including programs.a11y.spec.ts.
-const didaxisTestMatch = /(?:ds\d-.*|programs(?:\.[^.]+)?)\.spec\.ts/;
+const didaxisTestMatch = /(?:ds\d+-.*|programs(?:\.[^.]+)?)\.spec\.ts/;
 
 /** Pinned so formatted dates match local vs CI; override via env if Didaxis standard differs. */
 const playwrightLocale = process.env.PLAYWRIGHT_LOCALE ?? 'en-US';
