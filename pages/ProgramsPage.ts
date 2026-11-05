@@ -13,6 +13,8 @@ export class ProgramsPage {
   readonly newProgramButton: Locator;
   readonly table: Locator;
   readonly newProgramModal: NewProgramModal;
+  /** User-visible error region (role=alert) after failed actions such as delete. */
+  readonly errorAlert: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -21,11 +23,18 @@ export class ProgramsPage {
     this.newProgramButton = this.main.getByRole('button', { name: /new program/i });
     this.table = this.main.getByRole('table');
     this.newProgramModal = new NewProgramModal(page);
+    this.errorAlert = page.getByRole('alert');
   }
 
   programRow(programName: string): Locator {
     return this.table.getByRole('row').filter({
       has: this.page.getByText(programName, { exact: true }),
+    });
+  }
+
+  deleteProgramButton(programName: string): Locator {
+    return this.programRow(programName).getByRole('button', {
+      name: `Delete ${programName}`,
     });
   }
 
@@ -91,5 +100,43 @@ export class ProgramsPage {
     await this.gotoAndOpenNewProgramForm();
     await this.fillNewProgramForm(programName, description);
     return this.submitNewProgramForm(createResponseTimeout);
+  }
+
+  editProgramButton(programName: string): Locator {
+    return this.programRow(programName).getByRole('button', {
+      name: `Edit ${programName}`,
+    });
+  }
+
+  /**
+   * Row actions sit off-canvas until hover (card overflow:hidden). Hover first
+   * so Delete/Edit land inside the visible program-list panel.
+   */
+  async hoverProgramRow(programName: string): Promise<void> {
+    const row = this.programRow(programName);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+  }
+
+  /**
+   * Clicks the row Delete control and accepts the native window.confirm.
+   * Returns the confirm message; callers assert copy if needed.
+   */
+  async acceptDeleteConfirmation(programName: string): Promise<string> {
+    await this.hoverProgramRow(programName);
+    const deleteBtn = this.deleteProgramButton(programName);
+
+    return new Promise<string>((resolve, reject) => {
+      this.page.once('dialog', async (dialog) => {
+        try {
+          const message = dialog.message();
+          await dialog.accept();
+          resolve(message);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      deleteBtn.click().catch(reject);
+    });
   }
 }
