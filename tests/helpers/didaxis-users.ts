@@ -1,4 +1,8 @@
-export const DIDAXIS_USER_IDS = ['user-1', 'user-2', 'user-3'] as const;
+export const DIDAXIS_USER_IDS = [
+  'user-1',
+  // 'user-2',
+  // 'user-3',
+] as const;
 export type DidaxisUserId = (typeof DIDAXIS_USER_IDS)[number];
 
 export type DidaxisCredentials = {
