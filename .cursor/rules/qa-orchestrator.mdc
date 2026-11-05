@@ -1,5 +1,5 @@
 ---
-description: How to drive a QA ticket or a red build to done by delegating to test-writer, triage, and bug-reporter subagents.
+description: How to drive one QA ticket, a backlog queue, or a red build to done by delegating to test-writer, triage, and bug-reporter subagents.
 alwaysApply: true
 ---
 
@@ -12,21 +12,51 @@ You coordinate the QA subagents. Do the analysis yourself; delegate implementati
 | Stage | Owner | Action |
 |-------|--------|--------|
 | Ticket given | You | Analyze ticket → test plan (see below) |
+| No ticket; "find what we're not testing", "explore <page> for untested flows", or "expand coverage" | You | Apply **explore-and-generate** (see Skills). One Gherkin plan. Human accepts before `test-writer` |
 | Plan ready | `test-writer` | Turn plan into Playwright spec(s) |
 | Spec returned | You | Run `npx playwright test` (scoped to the ticket) |
 | Run is red | `triage` | Classify failure (app bug vs test issue) |
 | Real app bug | `bug-reporter` | File bug; human approves before create |
 | Test issue | `test-writer` | Propose fix; human OKs before merge |
 
+## Skills
+
+| Skill | When |
+|-------|------|
+| **jira-ticket-to-gherkin** | A DS ticket is in hand (single ticket or backlog item) |
+| **explore-and-generate** | No ticket. User says "find what we're not testing", "explore <page> for untested flows", or "expand coverage". Read-only: one uncovered flow, one Gherkin plan. Do not use it when a ticket already exists |
+
 ## Ticket → plan (you)
 
 1. Apply the **jira-ticket-to-gherkin** skill (Jira → Gherkin **plus** mandatory live-app pass — browser MCP, else agent-browser CLI, else Playwright CLI; see skill step 3).
 2. Present the plan for review; proceed to test-writer only after the human accepts the scenarios.
 
+Backlog mode (below) does not pause for that review.
+
+## Backlog mode
+
+Work a queue. Do not pick a start time. A run begins only when something outside the agent starts it: a Cursor Automation, a headless `agent -p` run, or a local batch.
+
+**Queue:** every DS ticket in status "In Progress" that does not already have the `tests-generated` label.
+
+```
+project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in ("tests-generated")) ORDER BY key ASC
+```
+
+**Budget:** at most **5** tickets per run. Process them in key order. Leave the rest for the next run.
+
+**Per ticket:** analyze (jira-ticket-to-gherkin) → `test-writer` → `npx playwright test` → `triage` on red.
+
+**Output:** one PR per ticket. Link the ticket in the PR. After the PR exists, add the `tests-generated` label so the next run skips it.
+
+**Repeated failure:** stop on a repeated identical failure and move on to the next ticket. Do not stall the queue and do not ask the human mid-batch. Leave the ticket unlabeled when no PR was opened.
+
+**Human:** never merge a PR or close a ticket without a human. Bug filing still needs human approval before create.
+
 ## Loop guard
 
 - At most **3 delegations** per task (count each subagent invocation).
-- Never re-run the **same failing spec** more than **twice** without a new hypothesis — then stop and ask the human.
+- Never re-run the **same failing spec** more than **twice** without a new hypothesis — then stop and ask the human. In backlog mode, stop that ticket and move on instead of asking.
 
 ## Guardrails
 

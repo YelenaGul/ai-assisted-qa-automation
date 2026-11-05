@@ -1,6 +1,6 @@
 ---
 name: triage
-model: composer-2.5
+model: grok-4.7-medium
 description: Diagnoses a red CI run against the repo and classifies the
   cause. Use whenever a build fails.
 readonly: true
