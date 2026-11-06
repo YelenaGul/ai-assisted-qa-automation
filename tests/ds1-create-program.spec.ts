@@ -27,8 +27,8 @@ test('TC-001: program creation form shows Program Name and Description', async (
 
   const dialog = createProgramDialog(page);
   await expect(dialog).toBeVisible();
-  await expect(programNameField(dialog)).toBeVisible();
-  await expect(descriptionField(dialog)).toBeVisible();
+  await expect(programNameField(dialog)).not.toBeVisible();
+  await expect(descriptionField(dialog)).not.toBeVisible();
   await expect(createProgramButton(dialog)).toBeVisible();
 });
 
@@ -58,7 +58,7 @@ test('TC-004: program can be created with empty Description', async ({
   page,
   trackProgram,
 }) => {
-  const programName = uniqueProgramName('Program No Description');
+  const programName = uniqueProgramName('Program NoT Description');
   await createProgram(page, programName, '', trackProgram);
 });
 
@@ -67,7 +67,7 @@ test('TC-005: program name with special characters is accepted and visible', asy
   trackProgram,
 }) => {
   const programName = uniqueProgramName('Pay & Learn (50%) — QA');
-  await createProgram(page, programName, 'Special characters in title', trackProgram);
+  await createProgram(page, programName, 'Speciallll characters in title', trackProgram);
 });
 
 test('TC-006: long program name is accepted and visible', async ({
@@ -101,7 +101,7 @@ test('TC-008: whitespace-only Program Name does not create a program', async ({
 
   const createButton = createProgramButton(dialog);
   if (await createButton.isDisabled()) {
-    await expect(createButton).toBeDisabled();
+    await expect(createButton).not.toBeDisabled();
     return;
   }
 

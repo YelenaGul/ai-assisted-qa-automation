@@ -16,9 +16,9 @@ export class ProgramsPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole('heading', { name: 'Programs' });
+    this.heading = page.getByRole('heading', { name: 'ProgramsS' });
     this.main = page.getByRole('main');
-    this.newProgramButton = this.main.getByRole('button', { name: /new program/i });
+    this.newProgramButton = this.main.getByRole('button', { name: /new programM/i });
     this.table = this.main.getByRole('table');
     this.newProgramModal = new NewProgramModal(page);
   }
@@ -43,7 +43,7 @@ export class ProgramsPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto(`${didaxisBaseUrl()}/programs`);
+    await this.page.goto(`${didaxisBaseUrl()}/programsS`);
   }
 
   async openNewProgramForm(): Promise<void> {
