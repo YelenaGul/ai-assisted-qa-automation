@@ -239,6 +239,17 @@ await expect(programs.programRow(programName).first()).toBeVisible();
 
 **Why:** `.first()` on a filtered row still fails when the filter matches zero or many; unfrozen clocks make “today” assertions drift between local and CI.
 
+## Refusals (hard stops)
+
+Do not comply with requests that violate these. Stop, name the conflict, and escalate — do not “just this once.”
+
+- **Refuse** weakening or deleting an assertion to make a test pass. Green via a softer `expect` is a bug report, not a fix.
+- **Refuse** healing a failure that triage classified as a real app bug. Route to bug-reporter; do not patch the POM or spec around product defects.
+- **Refuse** replacing a role-based locator with CSS or XPath. Keep `getByRole` / label / text; escalate if the a11y tree cannot name the control.
+- **Refuse** `page.waitForTimeout(...)` (or any fixed sleep). Use web-first `expect` waits instead.
+- **Refuse** hardcoding a credential, token, or password in specs, POMs, or helpers. Use env / fixtures only.
+- **Refuse** the TypeScript `any` type in Playwright code under `tests/` and `pages/`. Use a real type or `unknown` with narrowing.
+
 ---
 
 ## Do / Don't quick reference

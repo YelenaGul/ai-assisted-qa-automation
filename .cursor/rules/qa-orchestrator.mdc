@@ -1,5 +1,5 @@
 ---
-description: How to drive one QA ticket, a backlog queue, or a red build to done by delegating to test-writer, triage, and bug-reporter subagents.
+description: How to drive one QA ticket, a backlog queue, or a red build to done by delegating to test-writer, triage, self-heal, and bug-reporter subagents.
 alwaysApply: true
 ---
 
@@ -12,12 +12,14 @@ You coordinate the QA subagents. Do the analysis yourself; delegate implementati
 | Stage | Owner | Action |
 |-------|--------|--------|
 | Ticket given | You | Analyze ticket → test plan (see below) |
+| Backlog run started externally (Automation / `agent -p` / local batch) | You | Apply **Backlog mode**: queue of In Progress DS tickets without `tests-generated` (max 5) |
 | No ticket; "find what we're not testing", "explore <page> for untested flows", or "expand coverage" | You | Apply **explore-and-generate** (see Skills). One Gherkin plan. Human accepts before `test-writer` |
 | Plan ready | `test-writer` | Turn plan into Playwright spec(s) |
 | Spec returned | You | Run `npx playwright test` (scoped to the ticket) |
-| Run is red | `triage` | Classify failure (app bug vs test issue) |
-| Real app bug | `bug-reporter` | File bug; human approves before create |
-| Test issue | `test-writer` | Propose fix; human OKs before merge |
+| Run is red | `triage` | Classify failure (app bug vs test issue / drift) — see **Heal on red** |
+| Drift (test issue) | You + **self-heal** | Re-discover via Agent-Browser, patch POM, prove green with assertions unchanged, open repair PR |
+| Real app bug | `bug-reporter` | File and link the bug; human approves before create — **never heal** |
+| Other test issue (not drift) | `test-writer` | Propose fix; human OKs before merge |
 
 ## Skills
 
@@ -25,6 +27,7 @@ You coordinate the QA subagents. Do the analysis yourself; delegate implementati
 |-------|------|
 | **jira-ticket-to-gherkin** | A DS ticket is in hand (single ticket or backlog item) |
 | **explore-and-generate** | No ticket. User says "find what we're not testing", "explore <page> for untested flows", or "expand coverage". Read-only: one uncovered flow, one Gherkin plan. Do not use it when a ticket already exists |
+| **self-heal** | AFTER triage classifies a red run as drift (test issue). User says "the build is red because a locator broke", "fix the drifted selector", "the test broke after a UI change", or "heal the suite". Never for a real app bug |
 
 ## Ticket → plan (you)
 
@@ -35,7 +38,7 @@ Backlog mode (below) does not pause for that review.
 
 ## Backlog mode
 
-Work a queue. Do not pick a start time. A run begins only when something outside the agent starts it: a Cursor Automation, a headless `agent -p` run, or a local batch.
+Work a queue instead of a single ticket. The agent **never decides when to start**. A run begins only when something outside the agent starts it: a Cursor Automation, a headless `agent -p` run, or a local batch.
 
 **Queue:** every DS ticket in status "In Progress" that does not already have the `tests-generated` label.
 
@@ -45,13 +48,28 @@ project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in ("
 
 **Budget:** at most **5** tickets per run. Process them in key order. Leave the rest for the next run.
 
-**Per ticket:** analyze (jira-ticket-to-gherkin) → `test-writer` → `npx playwright test` → `triage` on red.
+**Per ticket:** analyze → `test-writer` → `npx playwright test` → `triage` on red.
 
 **Output:** one PR per ticket. Link the ticket in the PR. After the PR exists, add the `tests-generated` label so the next run skips it.
 
 **Repeated failure:** stop on a repeated identical failure and move on to the next ticket. Do not stall the queue and do not ask the human mid-batch. Leave the ticket unlabeled when no PR was opened.
 
 **Human:** never merge a PR or close a ticket without a human. Bug filing still needs human approval before create.
+
+## Heal on red
+
+On a red run, **always** delegate to `triage` first to classify. Do not patch until classification is in.
+
+| Triage says | Action |
+|-------------|--------|
+| **Drift (test issue)** | Apply **self-heal**: re-discover the element via the Agent-Browser a11y tree, patch the locator in the POM only, re-run and prove green **with assertions unchanged**, then open a **repair PR** linked to the failing run |
+| **Real app bug** | Delegate to `bug-reporter` to file and link the bug. **Never heal a bug** — no POM/spec “fix” around product defects |
+
+**Budget:** at most **5** heals per run. One repair per heal; leave remaining drifts for the next run.
+
+**Stop and escalate** if a heal will not prove green with assertions unchanged (including when the only path to green is weakening or deleting an `expect`). Do not open a repair PR for a failed heal.
+
+**Never heal an assertion** — only locators in the POM. **Never merge** a repair PR without a human.
 
 ## Loop guard
 

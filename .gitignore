@@ -22,3 +22,5 @@ node_modules/
 # Local notes and scratch files
 delete-probe.png
 tips.docx
+~$tips.docx
+ci-artifacts/
