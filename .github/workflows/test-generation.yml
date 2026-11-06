@@ -44,15 +44,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           agent -p --force --trust --output-format text "$(cat <<'EOF'
-          Work the "In Progress" backlog. This workflow started you; do not start another run.
+          Work the "In Progress" backlog, then CI self-heal. This workflow started you; do not start another run.
+          Follow .cursor/rules/qa-orchestrator.mdc (Backlog mode + Heal on red) and .cursor/skills/self-heal/SKILL.md.
 
+          ## Backlog
           Queue: DS tickets in status "In Progress" that do not already have the tests-generated label.
           Budget: at most 5 tickets. Process them in key order.
 
-          Per ticket: analyze the ticket, write a conforming Playwright spec under tests/, run it with npx playwright test, and triage a red run. Open one PR linked to the ticket. After the PR exists, add the tests-generated label so the next run skips it.
-
+          Per ticket: analyze the ticket, write a conforming Playwright spec under tests/, run it with npx playwright test.
+          On red: triage first. If drift (test issue) → apply self-heal (Agent-Browser a11y rediscovery, POM locator patch only, re-run proving green with assertions unchanged), then open a repair PR linked to this Actions run. If real app bug → bug-reporter path only; never heal a bug.
+          Open one ticket PR linked to the ticket. After that PR exists, add the tests-generated label so the next run skips it.
           Stop on a repeated identical failure and move on. Leave the ticket unlabeled when no PR was opened.
-          Never merge a PR. Never close a ticket.
+
+          ## CI self-heal (always — even when the backlog queue is empty)
+          After backlog work (or immediately if the queue is empty), run: npx playwright test
+          If the suite is red: triage → if drift, apply self-heal like a ProgramsPage locator repair PR (rediscover via Agent-Browser, patch pages/ POM only, prove green with assertions unchanged, open one repair PR per heal linked to this Actions run URL).
+          Heal budget: at most 5 heals per run. Never heal or weaken assertions. Never heal a real app bug. Never merge a PR. Never close a ticket.
           EOF
           )"
 
