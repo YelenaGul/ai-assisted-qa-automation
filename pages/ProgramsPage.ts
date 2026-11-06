@@ -1,4 +1,4 @@
-import { type Locator, type Page } from '@playwright/test';
+import { type Dialog, type Locator, type Page } from '@playwright/test';
 import {
   programIdFromCreateResponse,
   waitForProgramCreateResponse,
@@ -26,6 +26,13 @@ export class ProgramsPage {
   programRow(programName: string): Locator {
     return this.table.getByRole('row').filter({
       has: this.page.getByText(programName, { exact: true }),
+    });
+  }
+
+  /** Delete action — visible after hovering the program row (card overflow:hidden). */
+  deleteProgramButton(programName: string): Locator {
+    return this.programRow(programName).getByRole('button', {
+      name: `Delete ${programName}`,
     });
   }
 
@@ -91,5 +98,51 @@ export class ProgramsPage {
     await this.gotoAndOpenNewProgramForm();
     await this.fillNewProgramForm(programName, description);
     return this.submitNewProgramForm(createResponseTimeout);
+  }
+
+  /** Reveals off-canvas row actions (Mantine Card overflow:hidden). */
+  async hoverProgramRow(programName: string): Promise<void> {
+    const row = this.programRow(programName);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+  }
+
+  /**
+   * Double-clicks Delete and handles every native confirm that appears.
+   * Returns dialog count/messages for the spec to assert — no expect() here.
+   * Accepts or dismisses every dialog so a known double-confirm bug does not flake.
+   */
+  async doubleClickDeleteAndCollectDialogs(
+    programName: string,
+    action: 'accept' | 'dismiss',
+  ): Promise<{ count: number; messages: string[] }> {
+    const messages: string[] = [];
+    let chain: Promise<void> = Promise.resolve();
+    const deleteBtn = this.deleteProgramButton(programName);
+
+    const onDialog = (dialog: Dialog) => {
+      chain = chain.then(async () => {
+        messages.push(dialog.message());
+        if (action === 'accept') {
+          await dialog.accept();
+        } else {
+          await dialog.dismiss();
+        }
+      });
+    };
+
+    await this.hoverProgramRow(programName);
+    this.page.on('dialog', onDialog);
+    try {
+      await deleteBtn.dblclick();
+      await chain;
+      // Allow a follow-up confirm (DS-262) to enqueue before removing the listener.
+      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      await chain;
+    } finally {
+      this.page.off('dialog', onDialog);
+    }
+
+    return { count: messages.length, messages };
   }
 }
