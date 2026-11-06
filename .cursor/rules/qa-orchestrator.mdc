@@ -48,9 +48,11 @@ project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in ("
 
 **Budget:** at most **5** tickets per run. Process them in key order. Leave the rest for the next run.
 
-**Per ticket:** analyze → `test-writer` → `npx playwright test` → `triage` on red.
+**Per ticket:** analyze → `test-writer` → `npx playwright test` → `triage` on red → **Heal on red** / **self-heal** when triage says drift (repair PR), or `bug-reporter` when triage says app bug.
 
 **Output:** one PR per ticket. Link the ticket in the PR. After the PR exists, add the `tests-generated` label so the next run skips it.
+
+**CI self-heal (Test Generation / Automation):** after backlog work — **including when the queue is empty** — run `npx playwright test`. If red, apply **Heal on red** the same way as a local suite heal (e.g. POM locator repair PR). Do not exit on an empty queue without that suite pass.
 
 **Repeated failure:** stop on a repeated identical failure and move on to the next ticket. Do not stall the queue and do not ask the human mid-batch. Leave the ticket unlabeled when no PR was opened.
 
