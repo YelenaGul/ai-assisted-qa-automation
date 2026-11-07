@@ -1,111 +1,118 @@
 import { test, expect } from '../fixtures/didaxis.fixture';
+import { ProgramsPage } from '../pages/ProgramsPage';
+import { uniqueProgramName } from './helpers/didaxis';
 import {
-  uniqueProgramName,
-  gotoPrograms,
-  openNewProgramModal,
-  createProgram,
-  createProgramDialog,
-  newProgramButton,
-  programNameField,
-  descriptionField,
-  createProgramButton,
-  expectProgramListed,
-  programsMain,
-} from './helpers/didaxis';
-import {
-  expectDuplicateCreateRejected,
   programNameWithLength,
   PROGRAM_NAME_MAX_LENGTH,
 } from './helpers/program-validation';
-import { ProgramsPage } from '../pages/ProgramsPage';
 
-test('TC-001: program creation form shows Program Name and Description', async ({
-  page,
-}) => {
-  await gotoPrograms(page);
-  await newProgramButton(page).click();
-
-  const dialog = createProgramDialog(page);
-  await expect(dialog).toBeVisible();
-  await expect(programNameField(dialog)).not.toBeVisible();
-  await expect(descriptionField(dialog)).not.toBeVisible();
-  await expect(createProgramButton(dialog)).toBeVisible();
-});
-
-test('TC-002: created program appears in the list and modal closes', async ({
-  page,
-  trackProgram,
-}) => {
-  const programName = uniqueProgramName('Web Development 2026');
-  await createProgram(
+test.describe('DS-1 Create new academic program', () => {
+  test('Program creation form shows Program Name and Description', async ({
     page,
-    programName,
-    'Full-stack web development program',
+  }) => {
+    const programs = new ProgramsPage(page);
+
+    await programs.goto();
+    await programs.openNewProgramForm();
+
+    await expect(programs.newProgramModal.dialog).toBeVisible();
+    await expect(programs.newProgramModal.programName).toBeVisible();
+    await expect(programs.newProgramModal.description).toBeVisible();
+    await expect(programs.newProgramModal.createButton).toBeVisible();
+  });
+
+  test('Successfully create a program', async ({ page, trackProgram }) => {
+    const programName = uniqueProgramName('Web Development 2026');
+    const programs = new ProgramsPage(page);
+
+    trackProgram(
+      await programs.createProgram(
+        programName,
+        'Full-stack web development program',
+      ),
+    );
+
+    await expect(programs.newProgramModal.dialog).toBeHidden();
+    const row = programs.programRow(programName);
+    await expect(row).toHaveCount(1);
+    await row.scrollIntoViewIfNeeded();
+    await expect(row).toBeVisible();
+  });
+
+  test('Program can be created with empty Description', async ({
+    page,
     trackProgram,
-  );
-});
+  }) => {
+    const programName = uniqueProgramName('Program No Description');
+    const programs = new ProgramsPage(page);
 
-test('TC-003: Create is disabled when Program Name is empty', async ({ page }) => {
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill('');
-  await descriptionField(dialog).fill('Optional description');
+    trackProgram(await programs.createProgram(programName, ''));
 
-  await expect(createProgramButton(dialog)).toBeDisabled();
-});
+    await expect(programs.newProgramModal.dialog).toBeHidden();
+    const row = programs.programRow(programName);
+    await expect(row).toHaveCount(1);
+    await row.scrollIntoViewIfNeeded();
+    await expect(row).toBeVisible();
+  });
 
-test('TC-004: program can be created with empty Description', async ({
-  page,
-  trackProgram,
-}) => {
-  const programName = uniqueProgramName('Program NoT Description');
-  await createProgram(page, programName, '', trackProgram);
-});
+  test('Validation prevents empty program name', async ({ page }) => {
+    const programs = new ProgramsPage(page);
 
-test('TC-005: program name with special characters is accepted and visible', async ({
-  page,
-  trackProgram,
-}) => {
-  const programName = uniqueProgramName('Pay & Learn (50%) — QA');
-  await createProgram(page, programName, 'Speciallll characters in title', trackProgram);
-});
+    await programs.goto();
+    await programs.openNewProgramForm();
+    await programs.newProgramModal.programName.fill('');
+    await programs.newProgramModal.description.fill('Optional description');
 
-test('TC-006: long program name is accepted and visible', async ({
-  page,
-  trackProgram,
-}) => {
-  const programName = programNameWithLength(PROGRAM_NAME_MAX_LENGTH, 'Long');
-  await createProgram(page, programName, 'Boundary length check', trackProgram);
-});
+    await expect(programs.newProgramModal.createButton).toBeDisabled();
+  });
 
-test.fixme('TC-007: duplicate program name on create is rejected @DS-249', async ({
-  page,
-  trackProgram,
-}) => {
-  const programName = uniqueProgramName('Duplicate Title Test');
-  const programs = new ProgramsPage(page);
+  test('Whitespace-only Program Name cannot be submitted', async ({ page }) => {
+    const programs = new ProgramsPage(page);
 
-  trackProgram(await programs.createProgram(programName, 'First instance'));
-  await expectProgramListed(page, programName, 1);
-  await expectDuplicateCreateRejected(programs, programName);
-});
+    await programs.goto();
+    await programs.openNewProgramForm();
+    await programs.newProgramModal.programName.fill('   ');
 
-test('TC-008: whitespace-only Program Name does not create a program', async ({
-  page,
-}) => {
-  const whitespaceName = '   ';
+    await expect(programs.newProgramModal.createButton).toBeDisabled();
+    await expect(programs.newProgramModal.dialog).toBeVisible();
+  });
 
-  await openNewProgramModal(page);
-  const dialog = createProgramDialog(page);
-  await programNameField(dialog).fill(whitespaceName);
+  test('Program name with special characters is accepted and listed', async ({
+    page,
+    trackProgram,
+  }) => {
+    const programName = uniqueProgramName('Pay & Learn (50%) — QA');
+    const programs = new ProgramsPage(page);
 
-  const createButton = createProgramButton(dialog);
-  if (await createButton.isDisabled()) {
-    await expect(createButton).not.toBeDisabled();
-    return;
-  }
+    trackProgram(
+      await programs.createProgram(
+        programName,
+        'Special characters in title',
+      ),
+    );
 
-  await createButton.click();
-  await expect(programNameField(dialog)).toBeVisible();
-  await expect(programsMain(page).getByText(whitespaceName, { exact: true })).not.toBeVisible();
+    await expect(programs.newProgramModal.dialog).toBeHidden();
+    const row = programs.programRow(programName);
+    await expect(row).toHaveCount(1);
+    await row.scrollIntoViewIfNeeded();
+    await expect(row).toBeVisible();
+  });
+
+  test('Program name at max length 100 is accepted and listed', async ({
+    page,
+    trackProgram,
+  }) => {
+    const programName = programNameWithLength(PROGRAM_NAME_MAX_LENGTH, 'Long');
+    const programs = new ProgramsPage(page);
+
+    trackProgram(
+      await programs.createProgram(programName, 'Boundary length check'),
+    );
+
+    await expect(programs.newProgramModal.dialog).toBeHidden();
+    const row = programs.programRow(programName);
+    await expect(row).toHaveCount(1);
+    await row.scrollIntoViewIfNeeded();
+    await expect(row).toBeVisible();
+  });
 });
