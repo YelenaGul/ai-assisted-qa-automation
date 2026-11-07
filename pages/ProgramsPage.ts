@@ -92,4 +92,46 @@ export class ProgramsPage {
     await this.fillNewProgramForm(programName, description);
     return this.submitNewProgramForm(createResponseTimeout);
   }
+
+  deleteProgramButton(programName: string): Locator {
+    return this.programRow(programName).getByRole('button', {
+      name: `Delete ${programName}`,
+    });
+  }
+
+  /**
+   * Native window.confirm — Didaxis delete does not use a Mantine dialog.
+   */
+  private async clickDeleteWithNativeConfirm(
+    programName: string,
+    action: 'accept' | 'dismiss',
+  ): Promise<string> {
+    const deleteBtn = this.deleteProgramButton(programName);
+    await deleteBtn.scrollIntoViewIfNeeded();
+
+    return new Promise<string>((resolve, reject) => {
+      this.page.once('dialog', async (dialog) => {
+        try {
+          const message = dialog.message();
+          if (action === 'accept') {
+            await dialog.accept();
+          } else {
+            await dialog.dismiss();
+          }
+          resolve(message);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      deleteBtn.click().catch(reject);
+    });
+  }
+
+  async confirmDelete(programName: string): Promise<string> {
+    return this.clickDeleteWithNativeConfirm(programName, 'accept');
+  }
+
+  async cancelDelete(programName: string): Promise<string> {
+    return this.clickDeleteWithNativeConfirm(programName, 'dismiss');
+  }
 }
