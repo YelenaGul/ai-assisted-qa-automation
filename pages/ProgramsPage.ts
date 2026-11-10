@@ -20,7 +20,7 @@ export class ProgramsPage {
     this.page = page;
     this.heading = page.getByRole('heading', { name: 'ProgramsSS' });
     this.main = page.getByRole('main');
-    this.newProgramButton = this.main.getByRole('button', { name: /new programSS/i });
+    this.newProgramButton = this.main.getByRole('button', { name: /new program/i });
     this.table = this.main.getByRole('table');
     this.newProgramModal = new NewProgramModal(page);
     this.editProgramModal = new EditProgramModal(page);
