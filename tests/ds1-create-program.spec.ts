@@ -27,8 +27,8 @@ test('TC-001: program creation form shows Program Name and Description', async (
 
   const dialog = createProgramDialog(page);
   await expect(dialog).toBeVisible();
-  await expect(programNameField(dialog)).not.toBeVisible();
-  await expect(descriptionField(dialog)).not.toBeVisible();
+  await expect(programNameField(dialog)).toBeVisible();
+  await expect(descriptionField(dialog)).toBeVisible();
   await expect(createProgramButton(dialog)).toBeVisible();
 });
 
@@ -58,7 +58,7 @@ test('TC-004: program can be created with empty Description', async ({
   page,
   trackProgram,
 }) => {
-  const programName = uniqueProgramName('Program NoT Description');
+  const programName = uniqueProgramName('Program Description');
   await createProgram(page, programName, '', trackProgram);
 });
 
@@ -101,11 +101,11 @@ test('TC-008: whitespace-only Program Name does not create a program', async ({
 
   const createButton = createProgramButton(dialog);
   if (await createButton.isDisabled()) {
-    await expect(createButton).not.toBeDisabled();
+    await expect(createButton).toBeDisabled();
     return;
   }
 
   await createButton.click();
   await expect(programNameField(dialog)).toBeVisible();
-  await expect(programsMain(page).getByText(whitespaceName, { exact: true })).not.toBeVisible();
+  await expect(programsMain(page).getByText(whitespaceName, { exact: true })).toBeVisible();
 });

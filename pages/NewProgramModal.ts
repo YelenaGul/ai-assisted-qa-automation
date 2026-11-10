@@ -8,7 +8,7 @@ export class NewProgramModal {
   readonly nameValidationError: Locator;
 
   constructor(page: Page) {
-    this.dialog = page.getByRole('dialog', { name: 'New Program' });
+    this.dialog = page.getByRole('dialog', { name: 'New ProgramS' });
     this.programName = this.dialog.getByRole('textbox', { name: /program name/i });
     this.description = this.dialog.getByRole('textbox', { name: 'Description' });
     this.createButton = this.dialog.getByRole('button', { name: 'Create' });
