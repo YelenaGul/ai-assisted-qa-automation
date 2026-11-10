@@ -1,0 +1,72 @@
+---
+description: Always-on Playwright constitution — MUST / SHOULD / WON'T for Didaxis tests
+alwaysApply: true
+---
+
+# Playwright Constitution
+
+Non-negotiable defaults for this repo. Details live in skills; this is the checklist.
+
+## MUST
+
+| Rule | Meaning |
+|------|---------|
+| Role-based locators | Prefer `getByRole` → label/placeholder → text → `getByTestId` (comment why). Locators live in POM only. |
+| Web-first assertions | Auto-retrying `expect(locator)...`; never `waitForTimeout` or manual sleeps. |
+| `storageState` auth | Reuse saved auth; do not log in inside specs. |
+| Unique self-cleaning data | Faker/unique names; every create tears down (API cleanup). |
+| One tag per test | Exactly one of `@smoke` · `@sanity` · `@regression` · `@api` · `@e2e` · `@destructive` on each `test(...)`, never on `describe`. `@destructive` only for shared/global state (locale/roles/flags/settings); run serial + `afterEach`/`afterAll` revert. Own-data cleanup keeps an importance tag. |
+
+## SHOULD
+
+| Rule | Meaning |
+|------|---------|
+| Faker factories | Build test data via factories/helpers, not inline literals. |
+| Enums for repeated strings | Shared UI/copy/status strings → enums or constants. |
+| JSDoc on action methods | Document POM actions (intent + notable waits/side effects). |
+
+## WON'T
+
+| Never | Why |
+|-------|-----|
+| XPath / brittle CSS | Breaks on markup churn; use role-based locators. |
+| `waitForTimeout` | Flaky and slow; use web-first expects. |
+| Hardcoded secrets | Credentials/tokens only via env / auth setup. |
+| `any` | Keep TypeScript strict; type fixtures and helpers. |
+| Weakened assertions | Do not delete/soften `expect` to go green. |
+| Healing a real bug | App defects → `bug-reporter`; heal locators only after triage says drift. |
+| Tags on `describe` | Tag individual tests only. |
+
+## Agent governance
+
+Behavioral contract (not hook-enforced). **Audit, then edit.**
+
+### Proposal (before any non-trivial edit)
+
+Emit this block first; do not edit until the confidence rule below allows it:
+
+```markdown
+## Proposal
+- **Scope:** <files / flows touched>
+- **Confidence:** <1–10>
+- **Rationale:** <why this approach>
+- **Unknowns:** <missing facts, or "none">
+```
+
+### Confidence gate
+
+| Score | Action |
+|-------|--------|
+| `< 5` | Do **not** proceed. Ask for the missing input. |
+| `5–7` | Proceed only with **explicit Unknowns** listed **and** human approval. |
+| `≥ 8` | Proceed. |
+
+### Never invent
+
+Do not invent a path, enum, env var, credential, or UI/API message. **Ask** or **explore** (live app / repo / docs) instead.
+
+## Skills & agents (index)
+
+**Skills:** `jira-ticket-to-gherkin` · `explore-and-generate` · `exploratory-charter` · `pom-conventions` · `api-cleanup` · `playwright-test-config` · `a11y-checks` · `programs-network-edge-cases` · `ci-failure-triage` · `self-heal` · `jira-bug-reporter`
+
+**Agents:** `test-writer` (plan → spec) · `triage` (red → bug vs drift) · `bug-reporter` (file Jira bug after human OK)

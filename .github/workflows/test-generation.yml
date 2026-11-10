@@ -21,6 +21,10 @@ jobs:
       DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Needed so the eval-report commit can push back to the triggering branch.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -106,6 +110,34 @@ jobs:
           EOF
           )" | tee ci-artifacts/heal-output.txt
 
+      - name: Regenerate eval-report.md
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run eval:report
+          cp eval-report.md ci-artifacts/eval-report.md
+          {
+            echo "## Reliability eval"
+            echo
+            sed -n '1,80p' eval-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit eval-report.md
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="${GITHUB_REF_NAME}"
+          git checkout -B "$branch"
+          git add eval-report.md
+          if git diff --staged --quiet; then
+            echo "eval-report.md unchanged"
+          else
+            git commit -m "chore: regenerate eval-report.md after test generation"
+            git push origin "HEAD:$branch"
+          fi
+
       - name: Write job summary
         if: ${{ !cancelled() }}
         run: |
@@ -141,6 +173,7 @@ jobs:
             echo
             echo "- Playwright HTML report uploaded when present (\`playwright-report/\`)."
             echo "- Step logs: \`ci-artifacts/backlog-output.txt\`, \`ci-artifacts/heal-output.txt\`."
+            echo "- Reliability report: \`eval-report.md\`."
           } | tee ci-artifacts/job-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4

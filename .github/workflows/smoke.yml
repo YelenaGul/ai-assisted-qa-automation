@@ -1,14 +1,10 @@
-name: E2E Tests
+name: Smoke
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-  workflow_dispatch:
 
 jobs:
-  test:
+  smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -28,11 +24,11 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - run: npx playwright test
+      - run: npm run test:smoke
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          name: playwright-report-smoke
           path: playwright-report/
           retention-days: 7

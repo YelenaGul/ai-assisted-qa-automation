@@ -88,7 +88,18 @@ On a red run, **always** delegate to `triage` first to classify. Do not patch un
   - **`triage`:** read-only diagnosis from CI artifacts and repo; no file writes, no merges, no bug filing.
   - **`bug-reporter`:** Jira Bug create/link via Atlassian MCP after human confirms app defect; no repo file edits.
 
+## Eval report (always)
+
+After **every** Test Generation / backlog / heal / orchestrator session (CI or local), regenerate the suite reliability report before you stop:
+
+```bash
+npm run eval:report
+```
+
+Writes `eval-report.md` (flake rate, heal success + masked-regression=0, generation-gate pass rate, ask-vs-guess). Cursor has no built-in telemetry — measurement is CI logs + PR history + this session’s `ci-artifacts/` via `scripts/generate-eval-report.mjs`. Commit or attach the updated file with the run’s PR / summary when one exists.
+
 ## Done
 
 - Suite is **green** for the ticket’s scope, **or**
 - A **bug is filed and linked** (with human approval) and remaining work is tracked there.
+- **`eval-report.md` is regenerated** for this run.
