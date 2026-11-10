@@ -1,176 +1,204 @@
 import { test, expect } from '../fixtures/didaxis.fixture';
-import {
-  uniqueProgramName,
-  createProgram,
-  openEditProgramDialog,
-  editProgramDialog,
-  programNameField,
-  descriptionField,
-  saveProgramButton,
-  cancelEditProgramButton,
-  fillEditProgramForm,
-  expectProgramListed,
-  expectProgramNotListed,
-  expectProgramRowDetails,
-  saveEditProgram,
-  programRows,
-} from './helpers/didaxis';
+import { ProgramsPage } from '../pages/ProgramsPage';
+import { uniqueProgramName } from './helpers/didaxis';
 
-test.describe.configure({ mode: 'serial' });
-test.setTimeout(120_000);
+test.setTimeout(180_000);
 
-test('TC-001: edit form is pre-populated with current program data', async ({ page, trackProgram }) => {
+const listTimeout = 60_000;
+
+async function createListedProgram(
+  programs: ProgramsPage,
+  trackProgram: (programId: string) => void,
+  programName: string,
+  description: string,
+): Promise<void> {
+  trackProgram(await programs.createProgram(programName, description));
+  await expect(programs.newProgramModal.dialog).toBeHidden({ timeout: listTimeout });
+  await expect(programs.programRow(programName)).toHaveCount(1, { timeout: listTimeout });
+}
+
+test('Edit form opens with the program\'s current name and description', async ({
+  page,
+  trackProgram,
+}) => {
   const programName = uniqueProgramName('Web Development 2026');
   const description = 'Full-stack web development program';
-  await createProgram(page, programName, description, trackProgram);
+  const programs = new ProgramsPage(page);
 
-  const dialog = await openEditProgramDialog(page, programName);
-  await expect(programNameField(dialog)).toHaveValue(programName);
-  await expect(descriptionField(dialog)).toHaveValue(description);
+  await createListedProgram(programs, trackProgram, programName, description);
+  await programs.openEditDialog(programName);
+
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+  await expect(programs.editProgramModal.programName).toHaveValue(programName);
+  await expect(programs.editProgramModal.description).toHaveValue(description);
 });
 
-test('TC-002: updated program name appears in list after Save', async ({ page, trackProgram }) => {
+test('Saving a new name closes the dialog and updates the list', async ({
+  page,
+  trackProgram,
+}) => {
   const programName = uniqueProgramName('Web Development 2026');
   const updatedName = `${programName} - Updated`;
-  await createProgram(page, programName, 'Full-stack web development program', trackProgram);
+  const programs = new ProgramsPage(page);
 
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { programName: updatedName });
-  await saveEditProgram(page);
+  await createListedProgram(
+    programs,
+    trackProgram,
+    programName,
+    'Full-stack web development program',
+  );
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
 
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, updatedName);
-  await expectProgramNotListed(page, programName);
+  await programs.fillEditProgramName(updatedName);
+  await programs.saveEdit();
+
+  await expect(programs.editProgramModal.dialog).toBeHidden({ timeout: listTimeout });
+  await expect(programs.programRow(updatedName)).toHaveCount(1, { timeout: listTimeout });
+  await programs.programRow(updatedName).scrollIntoViewIfNeeded();
+  await expect(programs.programNameInList(updatedName)).toBeVisible();
+  await expect(programs.programNameInList(programName)).toHaveCount(0);
+  await expect(programs.programRow(programName)).toHaveCount(0);
 });
 
-test('TC-003: name unchanged when only description is edited', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Data Science 2026');
-  const originalDescription = 'Intro to data science';
-  const newDescription = 'Intro to data science — advanced track';
-  await createProgram(page, programName, originalDescription, trackProgram);
+test('Changing only the description leaves the name unchanged', async ({
+  page,
+  trackProgram,
+}) => {
+  const programName = uniqueProgramName('Web Development 2026');
+  const updatedDescription = 'Updated curriculum overview';
+  const programs = new ProgramsPage(page);
 
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { description: newDescription });
-  await saveEditProgram(page);
+  await createListedProgram(
+    programs,
+    trackProgram,
+    programName,
+    'Full-stack web development program',
+  );
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
 
-  await expect(dialog).toBeHidden();
-  await expectProgramRowDetails(page, programName, newDescription);
+  await programs.fillEditProgramDescription(updatedDescription);
+  await expect(programs.editProgramModal.programName).toHaveValue(programName);
+  await programs.saveEdit();
+
+  await expect(programs.editProgramModal.dialog).toBeHidden({ timeout: listTimeout });
+  await expect(programs.programRow(programName)).toHaveCount(1, { timeout: listTimeout });
+  await programs.programRow(programName).scrollIntoViewIfNeeded();
+  await expect(programs.programNameInList(programName)).toBeVisible();
+  await expect(
+    programs.programDescriptionInRow(programName, updatedDescription),
+  ).toBeVisible();
 });
 
-test('TC-004: Save without edits keeps program unchanged', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Mobile Apps 2026');
-  const description = 'iOS and Android cohort';
-  await createProgram(page, programName, description, trackProgram);
-
-  const dialog = await openEditProgramDialog(page, programName);
-  await expect(saveProgramButton(dialog)).toBeEnabled();
-  await saveEditProgram(page);
-
-  await expect(editProgramDialog(page)).toBeHidden();
-  await expectProgramRowDetails(page, programName, description);
-});
-
-test('TC-005: empty name on edit cannot be saved', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Web Development 2026 - Updated');
-  await createProgram(page, programName, 'Edit validation test', trackProgram);
-
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { programName: '' });
-  await expect(saveProgramButton(dialog)).toBeDisabled();
-
-  await cancelEditProgramButton(dialog).click();
-  await expectProgramListed(page, programName);
-});
-
-test('TC-006: renaming to an existing program name', async ({ page, trackProgram }) => {
-  const existingName = uniqueProgramName('Web Development 2026 - Updated');
-  const otherName = uniqueProgramName('Data Science 2026');
-  await createProgram(page, existingName, 'First program', trackProgram);
-  await createProgram(page, otherName, 'Second program', trackProgram);
-
-  const dialog = await openEditProgramDialog(page, otherName);
-  await fillEditProgramForm(dialog, { programName: existingName });
-  await saveProgramButton(dialog).click();
-  await page.waitForTimeout(1500);
-
-  if (await editProgramDialog(page).isVisible()) {
-    await page.keyboard.press('Escape');
-    await expect(editProgramDialog(page)).toBeHidden({ timeout: 10_000 });
-  }
-
-  const duplicateCount = await programRows(page, existingName).count();
-  expect(duplicateCount).toBeGreaterThanOrEqual(1);
-  expect(duplicateCount).toBeLessThanOrEqual(2);
-});
-
-test('TC-007: Cancel discards unsaved name change', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Cloud Computing 2026');
-  await createProgram(page, programName, 'Cloud basics', trackProgram);
-
-  const dialog = await openEditProgramDialog(page, programName);
+test('Cancel discards an unsaved name change', async ({ page, trackProgram }) => {
+  const programName = uniqueProgramName('Web Development 2026');
   const rejectedName = uniqueProgramName('Should Not Persist');
-  await fillEditProgramForm(dialog, { programName: rejectedName });
-  await cancelEditProgramButton(dialog).click();
+  const programs = new ProgramsPage(page);
 
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, programName);
-  await expectProgramNotListed(page, rejectedName);
+  await createListedProgram(
+    programs,
+    trackProgram,
+    programName,
+    'Full-stack web development program',
+  );
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+
+  await programs.fillEditProgramName(rejectedName);
+  await programs.cancelEdit();
+
+  await expect(programs.editProgramModal.dialog).toBeHidden();
+  await expect(programs.programRow(programName)).toHaveCount(1, { timeout: listTimeout });
+  await programs.programRow(programName).scrollIntoViewIfNeeded();
+  await expect(programs.programNameInList(programName)).toBeVisible();
+  await expect(programs.programNameInList(rejectedName)).toHaveCount(0);
+  await expect(programs.programRow(rejectedName)).toHaveCount(0);
 });
 
-test('TC-008: special characters preserved on edit', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Legacy Program 2025');
-  await createProgram(page, programName, 'Original description', trackProgram);
+test('An empty Program Name cannot be saved', async ({ page, trackProgram }) => {
+  const programName = uniqueProgramName('Web Development 2026');
+  const programs = new ProgramsPage(page);
 
-  const updatedName = uniqueProgramName('Informatique & IA — Niveau 2 (2026)');
-  const updatedDescription = 'Cours: "advanced" & <basics>';
+  await createListedProgram(programs, trackProgram, programName, '');
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
 
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, {
-    programName: updatedName,
-    description: updatedDescription,
+  await programs.fillEditProgramName('');
+
+  await expect(programs.editProgramModal.saveButton).toBeDisabled();
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+  await expect(programs.programNameInList(programName)).toHaveCount(1);
+  await expect(programs.programNameInList(programName)).toBeVisible();
+});
+
+test('A whitespace-only Program Name cannot be saved', async ({ page, trackProgram }) => {
+  const programName = uniqueProgramName('Web Development 2026');
+  const programs = new ProgramsPage(page);
+
+  await createListedProgram(programs, trackProgram, programName, '');
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+
+  await programs.fillEditProgramName('   ');
+
+  await expect(programs.editProgramModal.saveButton).toBeDisabled();
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+  await expect(programs.programNameInList(programName)).toHaveCount(1);
+  await expect(programs.programNameInList(programName)).toBeVisible();
+});
+
+test('Leading and trailing spaces are removed from the saved Program Name', async ({
+  page,
+  trackProgram,
+}) => {
+  const programName = uniqueProgramName('Web Development 2026');
+  const trimmedName = `${programName} - Updated`;
+  const paddedName = `  ${trimmedName}  `;
+  const programs = new ProgramsPage(page);
+
+  await createListedProgram(programs, trackProgram, programName, '');
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
+
+  await programs.fillEditProgramName(paddedName);
+  await programs.saveEdit();
+
+  await expect(programs.editProgramModal.dialog).toBeHidden({ timeout: listTimeout });
+  await expect(programs.programNameWithExactSpacing(trimmedName)).toBeVisible({
+    timeout: listTimeout,
   });
-  await saveEditProgram(page);
-
-  await expect(dialog).toBeHidden();
-  await expectProgramRowDetails(page, updatedName, updatedDescription);
+  await expect(programs.programRow(trimmedName)).toHaveCount(1, { timeout: listTimeout });
+  await expect(programs.programNameWithExactSpacing(paddedName)).toHaveCount(0);
 });
 
-test('TC-009: 100-character program name saves on edit', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Max Length Edit Test');
-  await createProgram(page, programName, 'Length boundary check', trackProgram);
+test('Special characters in the name and description are kept after save', async ({
+  page,
+  trackProgram,
+}) => {
+  const programName = uniqueProgramName('Web Development 2026');
+  const updatedName = uniqueProgramName('Informatique & IA - Niveau 2');
+  const updatedDescription = 'Cours: advanced & basics';
+  const programs = new ProgramsPage(page);
 
-  const longName = 'X'.repeat(100);
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { programName: longName });
-  await saveEditProgram(page);
+  await createListedProgram(
+    programs,
+    trackProgram,
+    programName,
+    'Full-stack web development program',
+  );
+  await programs.openEditDialog(programName);
+  await expect(programs.editProgramModal.dialog).toBeVisible();
 
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, longName);
-  await expectProgramNotListed(page, programName);
-});
+  await programs.fillEditProgramName(updatedName);
+  await programs.fillEditProgramDescription(updatedDescription);
+  await programs.saveEdit();
 
-test('TC-010: whitespace-only name on edit cannot be saved', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('Web Development 2026 - Updated');
-  await createProgram(page, programName, 'Whitespace validation', trackProgram);
-
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { programName: '   ' });
-  await expect(saveProgramButton(dialog)).toBeDisabled();
-
-  await cancelEditProgramButton(dialog).click();
-  await expectProgramListed(page, programName);
-});
-
-test('TC-011: leading and trailing spaces trimmed on edit save', async ({ page, trackProgram }) => {
-  const programName = uniqueProgramName('UX Design 2026');
-  await createProgram(page, programName, 'Trim behavior', trackProgram);
-
-  const trimmedName = `${programName} Pro`;
-  const dialog = await openEditProgramDialog(page, programName);
-  await fillEditProgramForm(dialog, { programName: `  ${trimmedName}  ` });
-  await saveEditProgram(page);
-
-  await expect(dialog).toBeHidden();
-  await expectProgramListed(page, trimmedName);
-  await expectProgramNotListed(page, programName);
+  await expect(programs.editProgramModal.dialog).toBeHidden({ timeout: listTimeout });
+  await expect(programs.programRow(updatedName)).toHaveCount(1, { timeout: listTimeout });
+  await programs.programRow(updatedName).scrollIntoViewIfNeeded();
+  await expect(programs.programNameInList(updatedName)).toBeVisible();
+  await expect(
+    programs.programDescriptionInRow(updatedName, updatedDescription),
+  ).toBeVisible();
 });

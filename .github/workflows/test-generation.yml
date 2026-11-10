@@ -36,18 +36,31 @@ jobs:
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Prepare run summary
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "# Test Generation summary"
+            echo
+            echo "- **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- **Commit:** \`${{ github.sha }}\`"
+            echo "- **Triggered by:** ${{ github.event_name }}"
+            echo
+          } > ci-artifacts/run-summary.md
+
       - name: Work the In Progress backlog
+        id: backlog
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_TOKEN }}
           ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
           ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -o pipefail
           agent -p --force --trust --output-format text "$(cat <<'EOF'
-          Work the "In Progress" backlog, then CI self-heal. This workflow started you; do not start another run.
-          Follow .cursor/rules/qa-orchestrator.mdc (Backlog mode + Heal on red) and .cursor/skills/self-heal/SKILL.md.
+          Work the "In Progress" backlog only. This workflow started you; do not start another run.
+          Follow .cursor/rules/qa-orchestrator.mdc (Backlog mode). CI self-heal runs in the next workflow step — do not skip that work by exiting early; when the queue is empty, say so and exit 0 so the heal step still runs.
 
-          ## Backlog
           Queue: DS tickets in status "In Progress" that do not already have the tests-generated label.
           Budget: at most 5 tickets. Process them in key order.
 
@@ -55,18 +68,93 @@ jobs:
           On red: triage first. If drift (test issue) → apply self-heal (Agent-Browser a11y rediscovery, POM locator patch only, re-run proving green with assertions unchanged), then open a repair PR linked to this Actions run. If real app bug → bug-reporter path only; never heal a bug.
           Open one ticket PR linked to the ticket. After that PR exists, add the tests-generated label so the next run skips it.
           Stop on a repeated identical failure and move on. Leave the ticket unlabeled when no PR was opened.
+          Never merge a PR. Never close a ticket.
 
-          ## CI self-heal (always — even when the backlog queue is empty)
-          After backlog work (or immediately if the queue is empty), run: npx playwright test
-          If the suite is red: triage → if drift, apply self-heal like a ProgramsPage locator repair PR (rediscover via Agent-Browser, patch pages/ POM only, prove green with assertions unchanged, open one repair PR per heal linked to this Actions run URL).
-          Heal budget: at most 5 heals per run. Never heal or weaken assertions. Never heal a real app bug. Never merge a PR. Never close a ticket.
+          End your reply with a markdown section exactly titled:
+          ## Backlog summary
+          Include: tickets processed (keys), PRs opened (urls), labels added, skipped/failed tickets, and whether the queue was empty.
           EOF
-          )"
+          )" | tee ci-artifacts/backlog-output.txt
+
+      # Always runs after backlog — including when zero Jira tickets were ready.
+      - name: CI self-heal
+        id: heal
+        if: ${{ !cancelled() }}
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_TOKEN }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          agent -p --force --trust --output-format text "$(cat <<'EOF'
+          CI self-heal only. This workflow started you; do not start another run.
+          There may be zero Jira tickets ready — that does not matter. Always run the suite and heal if needed.
+          Follow .cursor/rules/qa-orchestrator.mdc (Heal on red) and .cursor/skills/self-heal/SKILL.md.
+
+          1. Run: npx playwright test
+          2. If green: report pass counts and exit 0.
+          3. If red: triage first.
+             - Drift (test issue): apply self-heal — rediscover via Agent-Browser a11y tree, patch pages/ POM locators only, re-run and prove green WITH assertions unchanged, open one repair PR per heal linked to this Actions run URL.
+             - Real app bug: do not heal; note bug-reporter path / existing tickets. Never patch around product defects.
+          4. Heal budget: at most 5 heals this step.
+          Never heal or weaken assertions. Never merge a PR. Never close a ticket.
+
+          End your reply with a markdown section exactly titled:
+          ## CI self-heal summary
+          Include: Playwright totals (passed/failed/skipped/flaky), triage classes, heals performed (old→new locator + repair PR urls), heal budget used, and app bugs noted (not healed).
+          EOF
+          )" | tee ci-artifacts/heal-output.txt
+
+      - name: Write job summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            cat ci-artifacts/run-summary.md
+            echo
+            echo "## Backlog"
+            echo
+            if [ -f ci-artifacts/backlog-output.txt ]; then
+              # Prefer the agent's ## Backlog summary block when present.
+              if grep -q '^## Backlog summary' ci-artifacts/backlog-output.txt; then
+                sed -n '/^## Backlog summary/,$p' ci-artifacts/backlog-output.txt
+              else
+                cat ci-artifacts/backlog-output.txt
+              fi
+            else
+              echo "_No backlog output captured._"
+            fi
+            echo
+            echo "## CI self-heal"
+            echo
+            if [ -f ci-artifacts/heal-output.txt ]; then
+              if grep -q '^## CI self-heal summary' ci-artifacts/heal-output.txt; then
+                sed -n '/^## CI self-heal summary/,$p' ci-artifacts/heal-output.txt
+              else
+                cat ci-artifacts/heal-output.txt
+              fi
+            else
+              echo "_No self-heal output captured._"
+            fi
+            echo
+            echo "## Artifacts"
+            echo
+            echo "- Playwright HTML report uploaded when present (\`playwright-report/\`)."
+            echo "- Step logs: \`ci-artifacts/backlog-output.txt\`, \`ci-artifacts/heal-output.txt\`."
+          } | tee ci-artifacts/job-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-generation-summary
+          path: ci-artifacts/
           retention-days: 7
           if-no-files-found: warn

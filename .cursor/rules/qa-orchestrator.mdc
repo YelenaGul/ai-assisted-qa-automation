@@ -52,7 +52,7 @@ project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in ("
 
 **Output:** one PR per ticket. Link the ticket in the PR. After the PR exists, add the `tests-generated` label so the next run skips it.
 
-**CI self-heal (Test Generation / Automation):** after backlog work — **including when the queue is empty** — run `npx playwright test`. If red, apply **Heal on red** the same way as a local suite heal (e.g. POM locator repair PR). Do not exit on an empty queue without that suite pass.
+**CI self-heal (Test Generation / Automation):** the workflow runs a dedicated **CI self-heal** step after backlog — **including when zero Jira tickets were ready**. That step always runs `npx playwright test` and applies **Heal on red** when the suite is red (POM locator repair PRs). An empty backlog must not skip self-heal.
 
 **Repeated failure:** stop on a repeated identical failure and move on to the next ticket. Do not stall the queue and do not ask the human mid-batch. Leave the ticket unlabeled when no PR was opened.
 
