@@ -4,18 +4,18 @@ on:
   schedule:
     # Weekdays at 06:00 UTC. GitHub Actions cron is UTC.
     - cron: "0 6 * * 1-5"
-  push:
-  pull_request:
   workflow_dispatch:
     inputs:
       suite:
-        description: Manual suite (agent backlog + self-heal, or full Playwright regression)
+        description: Playwright slice or agent test generation
         required: true
-        default: test-generation
+        default: smoke
         type: choice
         options:
-          - test-generation
+          - smoke
+          - sanity
           - regression
+          - test-generation
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   smoke:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.suite == 'smoke'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -43,7 +43,15 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - run: npm run test:smoke
+      - name: Run smoke tests
+        run: npm run test:smoke
+
+      - name: Write test run summary
+        if: always()
+        env:
+          PLAYWRIGHT_SUITE: smoke
+          PLAYWRIGHT_COMMAND: npm run test:smoke
+        run: node scripts/write-playwright-job-summary.mjs
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -53,7 +61,7 @@ jobs:
           retention-days: 7
 
   sanity:
-    if: github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.suite == 'sanity'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -73,7 +81,15 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - run: npm run test:sanity
+      - name: Run sanity tests
+        run: npm run test:sanity
+
+      - name: Write test run summary
+        if: always()
+        env:
+          PLAYWRIGHT_SUITE: sanity
+          PLAYWRIGHT_COMMAND: npm run test:sanity
+        run: node scripts/write-playwright-job-summary.mjs
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -105,6 +121,13 @@ jobs:
 
       - name: Run all Playwright tests
         run: npx playwright test
+
+      - name: Write test run summary
+        if: always()
+        env:
+          PLAYWRIGHT_SUITE: regression
+          PLAYWRIGHT_COMMAND: npx playwright test
+        run: node scripts/write-playwright-job-summary.mjs
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

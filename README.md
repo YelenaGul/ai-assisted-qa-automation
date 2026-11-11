@@ -58,10 +58,12 @@ Single workflow: `.github/workflows/test-generation.yml` (Actions name **Playwri
 
 | Job | When | Command |
 |-----|------|---------|
-| `smoke` | Every pull request | `npm run test:smoke` |
-| `sanity` | Every push | `npm run test:sanity` |
-| `regression` | Manual run → suite **regression** | `npx playwright test` (full suite) |
-| `generate` | Weekday schedule (06:00 UTC) or manual run → suite **test-generation** | Cursor backlog + CI self-heal |
+| `smoke` | Actions → **Playwright CI** → Run workflow → suite **smoke** | `npm run test:smoke` |
+| `sanity` | Same → suite **sanity** | `npm run test:sanity` |
+| `regression` | Same → suite **regression** | `npx playwright test` (full suite) |
+| `generate` | Weekday schedule (06:00 UTC) or same menu → suite **test-generation** | Cursor backlog + CI self-heal |
+
+After **smoke**, **sanity**, or **regression**, open the job → **Summary** for pass/fail totals and each test that ran (`scripts/write-playwright-job-summary.mjs` reads `test-results/results.json`).
 
 ### Reliability eval
 
