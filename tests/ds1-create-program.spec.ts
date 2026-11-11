@@ -19,7 +19,9 @@ import {
 } from './helpers/program-validation';
 import { ProgramsPage } from '../pages/ProgramsPage';
 
-test('TC-001: program creation form shows Program Name and Description', async ({
+test('TC-001: program creation form shows Program Name and Description', {
+  tag: '@smoke',
+}, async ({
   page,
 }) => {
   await gotoPrograms(page);
@@ -32,7 +34,9 @@ test('TC-001: program creation form shows Program Name and Description', async (
   await expect(createProgramButton(dialog)).toBeVisible();
 });
 
-test('TC-002: created program appears in the list and modal closes', async ({
+test('TC-002: created program appears in the list and modal closes', {
+  tag: '@smoke',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -45,7 +49,9 @@ test('TC-002: created program appears in the list and modal closes', async ({
   );
 });
 
-test('TC-003: Create is disabled when Program Name is empty', async ({ page }) => {
+test('TC-003: Create is disabled when Program Name is empty', {
+  tag: '@sanity',
+}, async ({ page }) => {
   await openNewProgramModal(page);
   const dialog = createProgramDialog(page);
   await programNameField(dialog).fill('');
@@ -54,7 +60,9 @@ test('TC-003: Create is disabled when Program Name is empty', async ({ page }) =
   await expect(createProgramButton(dialog)).toBeDisabled();
 });
 
-test('TC-004: program can be created with empty Description', async ({
+test('TC-004: program can be created with empty Description', {
+  tag: '@sanity',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -62,7 +70,9 @@ test('TC-004: program can be created with empty Description', async ({
   await createProgram(page, programName, '', trackProgram);
 });
 
-test('TC-005: program name with special characters is accepted and visible', async ({
+test('TC-005: program name with special characters is accepted and visible', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -70,7 +80,9 @@ test('TC-005: program name with special characters is accepted and visible', asy
   await createProgram(page, programName, 'Speciallll characters in title', trackProgram);
 });
 
-test('TC-006: long program name is accepted and visible', async ({
+test('TC-006: long program name is accepted and visible', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -78,7 +90,9 @@ test('TC-006: long program name is accepted and visible', async ({
   await createProgram(page, programName, 'Boundary length check', trackProgram);
 });
 
-test.fixme('TC-007: duplicate program name on create is rejected @DS-249', async ({
+test.fixme('TC-007: duplicate program name on create is rejected @DS-249', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -90,7 +104,9 @@ test.fixme('TC-007: duplicate program name on create is rejected @DS-249', async
   await expectDuplicateCreateRejected(programs, programName);
 });
 
-test('TC-008: whitespace-only Program Name does not create a program', async ({
+test('TC-008: whitespace-only Program Name does not create a program', {
+  tag: '@regression',
+}, async ({
   page,
 }) => {
   const whitespaceName = '   ';

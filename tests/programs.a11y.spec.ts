@@ -5,7 +5,7 @@ import { ProgramsPage } from '../pages/ProgramsPage';
 
 test(
   'programs page axe scan (informative)',
-  { tag: ['@a11y', '@informative'] },
+  { tag: '@regression' },
   async ({ page }, testInfo) => {
     test.setTimeout(90_000);
 
@@ -21,7 +21,7 @@ test(
 
 test(
   'New Program modal axe scan (informative)',
-  { tag: ['@a11y', '@informative'] },
+  { tag: '@regression' },
   async ({ page }, testInfo) => {
     const programs = new ProgramsPage(page);
 
