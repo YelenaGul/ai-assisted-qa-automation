@@ -13,7 +13,9 @@ import {
   expectProgramsPageLayout,
 } from './helpers/didaxis';
 
-test('TC-001: list shows each program name and description', async ({
+test('TC-001: list shows each program name and description', {
+  tag: '@smoke',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -28,7 +30,9 @@ test('TC-001: list shows each program name and description', async ({
   await expectProgramRowDetails(page, secondName, 'Intro to data science');
 });
 
-test('TC-003: single program entry shows full details', async ({ page, trackProgram }) => {
+test('TC-003: single program entry shows full details', {
+  tag: '@sanity',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Solo Program 2026');
   const description = 'Only program in catalog';
   await createProgram(page, programName, description, trackProgram);
@@ -37,7 +41,9 @@ test('TC-003: single program entry shows full details', async ({ page, trackProg
   await expectProgramRowDetails(page, programName, description);
 });
 
-test('TC-004: deleted programs are not listed', async ({ page, trackProgram }) => {
+test('TC-004: deleted programs are not listed', {
+  tag: '@sanity',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Deleted Ghost Program');
   await createProgram(page, programName, 'Will be deleted', trackProgram);
 
@@ -46,7 +52,9 @@ test('TC-004: deleted programs are not listed', async ({ page, trackProgram }) =
   await expectProgramNotListed(page, programName);
 });
 
-test('TC-006: long description displays in list without breaking layout', async ({
+test('TC-006: long description displays in list without breaking layout', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -61,7 +69,9 @@ test('TC-006: long description displays in list without breaking layout', async 
   await expect(programRowDescription(row)).toContainText(description.slice(0, 80));
 });
 
-test('TC-007: special characters render as plain text in list', async ({
+test('TC-007: special characters render as plain text in list', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -73,14 +83,18 @@ test('TC-007: special characters render as plain text in list', async ({
   await expectProgramRowDetails(page, programName, description);
 });
 
-test('TC-010: programs page shows list controls and new program action', async ({
+test('TC-010: programs page shows list controls and new program action', {
+  tag: '@smoke',
+}, async ({
   page,
 }) => {
   await gotoPrograms(page);
   await expectProgramsPageLayout(page);
 });
 
-test('TC-002: empty state messaging when catalog has no rows', async ({ page }) => {
+test('TC-002: empty state messaging when catalog has no rows', {
+  tag: '@regression',
+}, async ({ page }) => {
   test.skip(
     true,
     'Empty catalog requires an isolated tenant; shared test.didaxis.studio always has programs',

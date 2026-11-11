@@ -11,6 +11,11 @@
         "command": "node .cursor/hooks/block-weakened-assertions.mjs",
         "matcher": "tests[/\\\\]",
         "failClosed": true
+      },
+      {
+        "command": "node .cursor/hooks/constitution-wont.mjs",
+        "matcher": "Write",
+        "failClosed": true
       }
     ]
   }

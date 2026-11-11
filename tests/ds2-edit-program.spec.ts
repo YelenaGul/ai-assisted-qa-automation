@@ -17,7 +17,9 @@ async function createListedProgram(
   await expect(programs.programRow(programName)).toHaveCount(1, { timeout: listTimeout });
 }
 
-test('Edit form opens with the program\'s current name and description', async ({
+test('Edit form opens with the program\'s current name and description', {
+  tag: '@smoke',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -33,7 +35,9 @@ test('Edit form opens with the program\'s current name and description', async (
   await expect(programs.editProgramModal.description).toHaveValue(description);
 });
 
-test('Saving a new name closes the dialog and updates the list', async ({
+test('Saving a new name closes the dialog and updates the list', {
+  tag: '@smoke',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -61,7 +65,9 @@ test('Saving a new name closes the dialog and updates the list', async ({
   await expect(programs.programRow(programName)).toHaveCount(0);
 });
 
-test('Changing only the description leaves the name unchanged', async ({
+test('Changing only the description leaves the name unchanged', {
+  tag: '@sanity',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -91,7 +97,9 @@ test('Changing only the description leaves the name unchanged', async ({
   ).toBeVisible();
 });
 
-test('Cancel discards an unsaved name change', async ({ page, trackProgram }) => {
+test('Cancel discards an unsaved name change', {
+  tag: '@sanity',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Web Development 2026');
   const rejectedName = uniqueProgramName('Should Not Persist');
   const programs = new ProgramsPage(page);
@@ -116,7 +124,9 @@ test('Cancel discards an unsaved name change', async ({ page, trackProgram }) =>
   await expect(programs.programRow(rejectedName)).toHaveCount(0);
 });
 
-test('An empty Program Name cannot be saved', async ({ page, trackProgram }) => {
+test('An empty Program Name cannot be saved', {
+  tag: '@regression',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Web Development 2026');
   const programs = new ProgramsPage(page);
 
@@ -132,7 +142,9 @@ test('An empty Program Name cannot be saved', async ({ page, trackProgram }) => 
   await expect(programs.programNameInList(programName)).toBeVisible();
 });
 
-test('A whitespace-only Program Name cannot be saved', async ({ page, trackProgram }) => {
+test('A whitespace-only Program Name cannot be saved', {
+  tag: '@regression',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Web Development 2026');
   const programs = new ProgramsPage(page);
 
@@ -148,7 +160,9 @@ test('A whitespace-only Program Name cannot be saved', async ({ page, trackProgr
   await expect(programs.programNameInList(programName)).toBeVisible();
 });
 
-test('Leading and trailing spaces are removed from the saved Program Name', async ({
+test('Leading and trailing spaces are removed from the saved Program Name', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -172,7 +186,9 @@ test('Leading and trailing spaces are removed from the saved Program Name', asyn
   await expect(programs.programNameWithExactSpacing(paddedName)).toHaveCount(0);
 });
 
-test('Special characters in the name and description are kept after save', async ({
+test('Special characters in the name and description are kept after save', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {

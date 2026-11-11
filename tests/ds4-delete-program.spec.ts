@@ -12,7 +12,9 @@ import {
   previewDeleteConfirmationMessage,
 } from './helpers/didaxis';
 
-test('TC-001: confirmed delete removes program from list', async ({
+test('TC-001: confirmed delete removes program from list', {
+  tag: '@smoke',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -24,7 +26,9 @@ test('TC-001: confirmed delete removes program from list', async ({
   await expectProgramNotListed(page, programName);
 });
 
-test('TC-002: cancel on confirmation keeps program', async ({ page, trackProgram }) => {
+test('TC-002: cancel on confirmation keeps program', {
+  tag: '@sanity',
+}, async ({ page, trackProgram }) => {
   const programName = uniqueProgramName('Cancel Delete Sample 2026');
   await createProgram(page, programName, 'Should remain after cancel', trackProgram);
 
@@ -33,7 +37,9 @@ test('TC-002: cancel on confirmation keeps program', async ({ page, trackProgram
   await expectProgramListed(page, programName);
 });
 
-test('TC-003: deleting one program leaves others intact', async ({
+test('TC-003: deleting one program leaves others intact', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -49,7 +55,9 @@ test('TC-003: deleting one program leaves others intact', async ({
   await expectProgramListed(page, keepName);
 });
 
-test('TC-004: program persists when deletion is not confirmed', async ({
+test('TC-004: program persists when deletion is not confirmed', {
+  tag: '@sanity',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -61,7 +69,9 @@ test('TC-004: program persists when deletion is not confirmed', async ({
   await expectProgramListed(page, programName);
 });
 
-test('TC-005: repeated confirm click deletes program once', async ({
+test('TC-005: repeated confirm click deletes program once', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -73,7 +83,9 @@ test('TC-005: repeated confirm click deletes program once', async ({
   await expectProgramNotListed(page, programName);
 });
 
-test('TC-007: confirmation dialog identifies program with special characters', async ({
+test('TC-007: confirmation dialog identifies program with special characters', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -85,7 +97,9 @@ test('TC-007: confirmation dialog identifies program with special characters', a
   await expectProgramListed(page, programName);
 });
 
-test('TC-008: deleting a program removes it from the visible list', async ({
+test('TC-008: deleting a program removes it from the visible list', {
+  tag: '@sanity',
+}, async ({
   page,
   trackProgram,
 }) => {

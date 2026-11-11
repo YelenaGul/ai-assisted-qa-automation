@@ -4,7 +4,9 @@ import { uniqueProgramName } from './helpers/didaxis';
 
 test.setTimeout(180_000);
 
-test('Program name with special characters is created and listed', async ({
+test('Program name with special characters is created and listed', {
+  tag: '@sanity',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -24,7 +26,9 @@ test('Program name with special characters is created and listed', async ({
   await expect(programs.programNameInList(programName)).toBeVisible();
 });
 
-test('Whitespace-only Program Name cannot be submitted', async ({ page }) => {
+test('Whitespace-only Program Name cannot be submitted', {
+  tag: '@regression',
+}, async ({ page }) => {
   const whitespaceName = '   ';
   const programs = new ProgramsPage(page);
 
@@ -37,7 +41,9 @@ test('Whitespace-only Program Name cannot be submitted', async ({ page }) => {
   await expect(programs.programNameWithExactSpacing(whitespaceName)).toHaveCount(0);
 });
 
-test('Duplicate Program Name is rejected with an error', async ({
+test('Duplicate Program Name is rejected with an error', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {
@@ -62,7 +68,9 @@ test('Duplicate Program Name is rejected with an error', async ({
   await expect(programs.programRow(programName)).toHaveCount(1, { timeout: 60_000 });
 });
 
-test('Empty Program Name keeps Create disabled', async ({ page }) => {
+test('Empty Program Name keeps Create disabled', {
+  tag: '@sanity',
+}, async ({ page }) => {
   const programs = new ProgramsPage(page);
 
   await programs.gotoAndOpenNewProgramForm();
@@ -73,7 +81,9 @@ test('Empty Program Name keeps Create disabled', async ({ page }) => {
   await expect(programs.newProgramModal.dialog).toBeVisible();
 });
 
-test('Leading and trailing spaces are removed from the saved Program Name', async ({
+test('Leading and trailing spaces are removed from the saved Program Name', {
+  tag: '@regression',
+}, async ({
   page,
   trackProgram,
 }) => {

@@ -103,15 +103,80 @@ await page.getByLabel('Email').fill(process.env.DIDAXIS_EMAIL!);
 
 **Why:** Re-logging every test slows the suite and hides session bugs the product sees in normal use.
 
-## 5. Test data
+## 5. Tagging strategy
 
-**Standard:** Unique names via `uniqueProgramName()` / `Date.now()` suffix; every created program calls `trackProgram(uuid)` immediately; cleanup via fixture DELETE — no manual `afterAll`, no hardcoded tokens.
+**Standard:** Exactly **one** tag on each `test(...)`, never on `test.describe`. Allowed set only:
 
-✅ **Good** (from `tests/helpers/didaxis.ts`):
+| Tag | Use for |
+|-----|---------|
+| `@smoke` | Critical path; must stay green on every change |
+| `@sanity` | Broader quick confidence beyond smoke |
+| `@regression` | Full feature coverage / deeper cases |
+| `@api` | HTTP/API-focused checks |
+| `@e2e` | Multi-step UI journeys spanning pages/flows |
+| `@destructive` | **Only** tests that mutate **shared/global** state (locale, roles, feature flags, org settings). Run serially (`npm run test:destructive` → `--workers=1`). |
+
+A test that creates records and cleans up **only its own data** keeps an importance tag (`@smoke` / `@sanity` / …) — not `@destructive`.
+
+**State mutation:** Any test that changes shared/global state **must** register an `afterEach` or `afterAll` revert hook that restores the prior value. Own-data teardown still uses fixtures (`trackProgram` / API DELETE), not `@destructive`.
+
+✅ **Good:**
 
 ```typescript
-const createResponse = waitForProgramCreateResponse(page);
-await createProgramButton(dialog).click();
+test('creates a program', { tag: '@smoke' }, async ({ page, trackProgram }) => { … });
+
+test('toggles org locale', { tag: '@destructive' }, async ({ page }) => {
+  const previous = await readOrgLocale(page);
+  test.afterEach(async () => { await setOrgLocale(page, previous); });
+  await setOrgLocale(page, 'fr-CA');
+  …
+});
+```
+
+❌ **Bad:**
+
+```typescript
+test.describe('programs', { tag: '@smoke' }, () => { … }); // tag on describe
+test('creates', { tag: ['@smoke', '@e2e'] }, async () => { … }); // more than one
+test('deletes my program', { tag: '@destructive' }, async () => { … }); // own data ≠ destructive
+```
+
+**Why:** One tag keeps slices (`npm run test:smoke`, …) meaningful; `@destructive` + serial + revert prevents parallel pollution of shared settings.
+
+## 6. Test data
+
+**Standard:**
+
+| Kind | Where | Rule |
+|------|-------|------|
+| Happy-path payloads | `test-data/factories/` (Faker) | Build via factories; unique fields for parallel safety |
+| Curated invalid / boundary sets | Static `.ts` under `test-data/` (e.g. `test-data/invalid/…`) | Fixed arrays of known-bad inputs — not random |
+| Secrets / URLs | `process.env` (from `.env`) | Never hardcode credentials or host tokens |
+| Repeated paths / UI messages | Enums or shared constants | No duplicated magic strings in specs |
+
+Every created program calls `trackProgram(uuid)` immediately; cleanup via fixture DELETE — no hardcoded tokens. Shared-state mutators use `afterEach`/`afterAll` revert (see Tagging).
+
+✅ **Good** — factory (`test-data/factories/program.ts`):
+
+```typescript
+import { faker } from '@faker-js/faker';
+
+export type ProgramInput = { name: string; description: string };
+
+export function buildProgram(
+  overrides: Partial<ProgramInput> = {},
+): ProgramInput {
+  return {
+    name: `Program ${faker.string.alphanumeric(8)}`,
+    description: faker.lorem.sentence(),
+    ...overrides,
+  };
+}
+```
+
+```typescript
+const program = buildProgram();
+await programs.createProgram(program.name, program.description);
 trackProgram(await programIdFromCreateResponse(await createResponse));
 ```
 
@@ -120,12 +185,13 @@ trackProgram(await programIdFromCreateResponse(await createResponse));
 ```typescript
 const name = 'Test Program';
 await programs.createProgram(name, '');
+const password = 'Didaxis2026!'; // secret in source
 test.afterAll(async () => { await request.delete(url, { headers: { Authorization: 'Bearer sk-…' } }); });
 ```
 
-**Why:** Colliding names flake in parallel runs; manual cleanup and hardcoded tokens leak data and secrets.
+**Why:** Factories keep happy-path data unique and maintainable; static invalid sets stay reproducible; env + enums avoid secret leaks and copy drift.
 
-## 6. API testing
+## 7. API testing
 
 **Standard:** Use `tests/helpers/didaxis-api.ts` and `request` with `DIDAXIS_API_TOKEN` or login helper; assert status/body via helpers — not ad-hoc URLs in specs.
 
@@ -146,14 +212,14 @@ await fetch('https://test.didaxis.studio/api/programs', {
 
 **Why:** Central helpers handle 401 refresh, UUID validation, and env-based auth consistently.
 
-## 7. Network mocking
+## 8. Network mocking
 
-**Standard:** Deterministic edge cases use `page.route` + POM actions; one tag per test; never mock the endpoint under test; assert UI copy observed on live app — see `.cursor/skills/programs-network-edge-cases/SKILL.md`. *(No `page.route` in repo yet — add per skill.)*
+**Standard:** Deterministic edge cases use `page.route` + POM actions; exactly one importance tag per test; never mock the endpoint under test; assert UI copy observed on live app — see `.cursor/skills/programs-network-edge-cases/SKILL.md`. *(No `page.route` in repo yet — add per skill.)*
 
 ✅ **Good** (advised pattern):
 
 ```typescript
-test('empty programs list', { tag: ['@programs-empty-list'] }, async ({ page }) => {
+test('empty programs list', { tag: '@regression' }, async ({ page }) => {
   await page.route('**/api/programs', (route) => {
     if (route.request().method() !== 'GET') return route.continue();
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
@@ -173,9 +239,9 @@ await page.locator('.error').filter({ hasText: 'Something went wrong' }).click()
 
 **Why:** Invented copy and inline locators fail when the app message differs; mocking the endpoint you intend to verify proves nothing.
 
-## 8. Accessibility
+## 9. Accessibility
 
-**Standard:** Programs coverage = strict axe (`withTags(['wcag2a','wcag2aa'])`, `expect(results.violations).toEqual([])`) + keyboard test via POM; one tag per test; report violations and stop — no `.disableRules()` — see `.cursor/skills/a11y-checks/SKILL.md`. *(Repo still has informative legacy scans — migrate to strict gate.)*
+**Standard:** Programs coverage = strict axe (`withTags(['wcag2a','wcag2aa'])`, `expect(results.violations).toEqual([])`) + keyboard test via POM; exactly one importance tag per test; report violations and stop — no `.disableRules()` — see `.cursor/skills/a11y-checks/SKILL.md`. *(Repo still has informative legacy scans — migrate to strict gate.)*
 
 ✅ **Good** (target pattern):
 
@@ -197,7 +263,7 @@ await reportAxeInformative(testInfo, results, 'new-program-modal');
 
 **Why:** Rule disables and non-gating scans hide WCAG regressions users hit in production.
 
-## 9. Assertions
+## 10. Assertions
 
 **Standard:** All `expect(...)` live in specs/helpers used by specs — web-first matchers; match observable UI/API outcomes from plans, not implementation details.
 
@@ -218,7 +284,7 @@ expect(blockedInDialog).toBeTruthy();
 
 **Why:** Boolean snapshots of `isVisible()` do not auto-retry and pass/fail on timing luck.
 
-## 10. Anti-flake
+## 11. Anti-flake
 
 **Standard:** No fixed timeouts or ambiguous `.first()`; pin time with `page.clock.install()` for relative dates; runner: `fullyParallel: true`, `retries: process.env.CI ? 2 : 0` (max 2), no `workers: 1`, pinned `locale`/`timezoneId` — see `playwright.config.ts` and `.cursor/skills/playwright-test-config/SKILL.md`.
 
@@ -263,6 +329,8 @@ Do not comply with requests that violate these. Stop, name the conflict, and esc
 | `trackProgram(uuid)` after real creates | Hardcoded tokens, `afterAll` DELETE hacks |
 | `didaxis-api` helpers for HTTP | Raw fetch with pasted secrets |
 | `page.route` for edge cases; live copy for asserts | Mock the endpoint under test; invent error strings |
-| Strict axe + keyboard via POM; one tag per test | `.disableRules()` to go green |
+| Strict axe + keyboard via POM; exactly one allowed tag | `.disableRules()` / tags on `describe` / multi-tags |
+| Faker factories + env secrets + enums | Inline literals, hardcoded tokens, magic copy |
+| `@destructive` only for shared state + revert hook | Tagging own-data cleanup as `@destructive` |
 | Web-first `expect` in specs | `expect()` inside `pages/` |
 | `page.clock.install()` for relative dates | `.first()` when filter should be enough |
