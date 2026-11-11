@@ -54,11 +54,14 @@ Or: `npx playwright test --grep @smoke` / `--grep "TC-002"`.
 
 ### CI triggers
 
-| Workflow | When | Command |
-|----------|------|---------|
-| Smoke | Every pull request | `npm run test:smoke` |
-| Sanity | Every push | `npm run test:sanity` |
-| Regression | On demand (`workflow_dispatch`) | `npx playwright test` (full suite) |
+Single workflow: `.github/workflows/test-generation.yml` (Actions name **Playwright CI**).
+
+| Job | When | Command |
+|-----|------|---------|
+| `smoke` | Every pull request | `npm run test:smoke` |
+| `sanity` | Every push | `npm run test:sanity` |
+| `regression` | Manual run → suite **regression** | `npx playwright test` (full suite) |
+| `generate` | Weekday schedule (06:00 UTC) or manual run → suite **test-generation** | Cursor backlog + CI self-heal |
 
 ### Reliability eval
 

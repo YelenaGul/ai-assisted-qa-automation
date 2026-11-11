@@ -73,7 +73,7 @@ function collectFlakeWindow(n) {
   const interesting = runs.filter(
     (r) =>
       r.status === 'completed' &&
-      /E2E|Smoke|Sanity|Regression|Playwright|Test Generation/i.test(
+      /E2E|Smoke|Sanity|Regression|Playwright|Test Generation|Playwright CI/i.test(
         r.workflowName,
       ) &&
       r.conclusion !== 'cancelled',
