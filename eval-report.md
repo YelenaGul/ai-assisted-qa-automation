@@ -1,12 +1,12 @@
 # Suite reliability eval report
 
-_Generated: 2026-11-18T15:30:50.302Z_  
+_Generated: 2026-11-19T15:33:09.693Z_  
 _Window: last **10** measurable CI runs (requested N=10)._  
 _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has **no** built-in telemetry for these metrics._
 
 ## Flake rate
 
-| Number | **0.6%** flaky outcomes among passed+flaky in measured runs (1 flaky / 176 passed+flaky across 4 runs) |
+| Number | **0.5%** flaky outcomes among passed+flaky in measured runs (1 flaky / 220 passed+flaky across 5 runs) |
 |--------|------|
 | How measured | Parsed `N flaky` / `N passed` lines from `gh run view <id> --log` for the last suite workflows (E2E/Smoke/Sanity/Regression/Test Generation). HTML reports alone are not authoritative without a json reporter. |
 | What it tells us | How often the suite only goes green because CI retries (up to 2) masked a first-attempt failure. |
@@ -15,6 +15,7 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 
 | Run | Workflow | Conclusion | Flaky | Passed | Link |
 |-----|----------|------------|-------|--------|------|
+| 44333992338 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44333992338) |
 | 44116723969 | Playwright CI | success | 1 | 43 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44116723969) |
 | 43893018431 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43893018431) |
 | 43439649140 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43439649140) |
@@ -24,14 +25,13 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 | 43069663442 | Playwright CI | success | n/a | 14 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43069663442) |
 | 43061894994 | Playwright CI | success | n/a | 10 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43061894994) |
 | 43061887082 | Playwright CI | success | n/a | 14 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43061887082) |
-| 43031825407 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43031825407) |
 
 ## Heal success rate
 
 | Number | **33.3% (2/6)** clean heals; attempts=6, clean=2 |
 |--------|------|
 | Masked-regression count | **0** (must be **0**) |
-| How measured | PR history: titles matching Heal/locator drift; “clean” = merged heal with no admission of softened/removed expects; masked = body admits weakened/removed expects (must stay 0). Latest `ci-artifacts/heal-output.txt` note: ** none (0). |
+| How measured | PR history: titles matching Heal/locator drift; “clean” = merged heal with no admission of softened/removed expects; masked = body admits weakened/removed expects (must stay 0). Latest `ci-artifacts/heal-output.txt` note: ** none (do-not-heal). |
 | What it tells us | Whether self-heal fixes real drift without papering over product bugs or softening assertions. |
 
 - [#20](https://github.com/YelenaGul/ai-assisted-qa-automation/pull/20) fix(test): heal ProgramsPage heading locator (open)
@@ -52,12 +52,12 @@ _Reviewed generation PRs: 14. Conservative first-PR gate passes: 0._
 
 ## Ask-vs-guess
 
-| Number | **ask 0 · guess 6** |
+| Number | **ask 0 · guess 7** |
 |--------|------|
 | How measured | Session review of `ci-artifacts/*.txt` (when present) plus PR bodies for skipped live recon / unset credentials (guess) vs explicit asks for a missing value. Not available from Cursor product telemetry. |
 | What it tells us | Whether the agent stops for missing facts or invents them — inventing drives false-green plans and brittle specs. |
 
-- backlog-output.txt: ask~0, guess~0
+- backlog-output.txt: ask~0, guess~1
 - heal-output.txt: ask~0, guess~0
 - PR #7: guessed/skipped live recon
 - PR #6: guessed/skipped live recon
