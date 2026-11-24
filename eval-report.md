@@ -1,6 +1,6 @@
 # Suite reliability eval report
 
-_Generated: 2026-11-23T17:40:01.191Z_  
+_Generated: 2026-11-24T17:08:35.662Z_  
 _Window: last **10** measurable CI runs (requested N=10)._  
 _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has **no** built-in telemetry for these metrics._
 
@@ -15,6 +15,7 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 
 | Run | Workflow | Conclusion | Flaky | Passed | Link |
 |-----|----------|------------|-------|--------|------|
+| 45229634236 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/45229634236) |
 | 44758917540 | Playwright CI | success | n/a | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44758917540) |
 | 44554452600 | Playwright CI | success | n/a | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44554452600) |
 | 44333992338 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44333992338) |
@@ -24,7 +25,6 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 | 43241000729 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43241000729) |
 | 43099950693 | Playwright CI | success | n/a | 10 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43099950693) |
 | 43079559575 | Playwright CI | failure | n/a | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43079559575) |
-| 43069663442 | Playwright CI | success | n/a | 14 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43069663442) |
 
 ## Heal success rate
 
