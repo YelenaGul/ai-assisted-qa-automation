@@ -1,12 +1,12 @@
 # Suite reliability eval report
 
-_Generated: 2026-11-26T16:34:21.533Z_  
+_Generated: 2026-11-27T16:19:54.341Z_  
 _Window: last **10** measurable CI runs (requested N=10)._  
 _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has **no** built-in telemetry for these metrics._
 
 ## Flake rate
 
-| Number | **0.5%** flaky outcomes among passed+flaky in measured runs (1 flaky / 220 passed+flaky across 5 runs) |
+| Number | **0.6%** flaky outcomes among passed+flaky in measured runs (1 flaky / 176 passed+flaky across 4 runs) |
 |--------|------|
 | How measured | Parsed `N flaky` / `N passed` lines from `gh run view <id> --log` for the last suite workflows (E2E/Smoke/Sanity/Regression/Test Generation). HTML reports alone are not authoritative without a json reporter. |
 | What it tells us | How often the suite only goes green because CI retries (up to 2) masked a first-attempt failure. |
@@ -15,6 +15,7 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 
 | Run | Workflow | Conclusion | Flaky | Passed | Link |
 |-----|----------|------------|-------|--------|------|
+| 45859853712 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/45859853712) |
 | 45659115956 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/45659115956) |
 | 45445068099 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/45445068099) |
 | 45229634236 | Playwright CI | failure | n/a | — | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/45229634236) |
@@ -24,7 +25,6 @@ _Source: `gh` CI logs + PR history (+ `ci-artifacts/` when present). Cursor has 
 | 44116723969 | Playwright CI | success | 1 | 43 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/44116723969) |
 | 43893018431 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43893018431) |
 | 43439649140 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43439649140) |
-| 43241000729 | Playwright CI | success | 0 | 44 | [run](https://github.com/YelenaGul/ai-assisted-qa-automation/actions/runs/43241000729) |
 
 ## Heal success rate
 
